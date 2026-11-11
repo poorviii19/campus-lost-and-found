@@ -23,3 +23,4 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"✔ Created admin user '{username}' with password '{password}'"))
         else:
             self.stdout.write(self.style.SUCCESS(f"✔ Updated existing user '{username}' to superuser/staff with password '{password}'"))
+

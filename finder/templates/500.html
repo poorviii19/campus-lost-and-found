@@ -1,0 +1,29 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}Server Error (500) | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-xl p-8 sm:p-10 text-center space-y-6">
+        <div class="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-2xl font-bold shadow-sm">
+            <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+        </div>
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-rose-600">Error 500</span>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">Something Went Wrong</h1>
+            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                Our server encountered an unexpected error. Please refresh the page or try again in a few moments.
+            </p>
+        </div>
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{% url 'home' %}" class="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 transition-colors">
+                Return Home
+            </a>
+            <button onclick="window.location.reload()" class="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
+                Refresh Page
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

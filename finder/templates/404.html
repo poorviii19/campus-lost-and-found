@@ -1,0 +1,29 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}Page Not Found (404) | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-xl p-8 sm:p-10 text-center space-y-6">
+        <div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto text-2xl font-bold shadow-sm">
+            <i data-lucide="compass" class="w-8 h-8"></i>
+        </div>
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Error 404</span>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">Lost Your Way?</h1>
+            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                We couldn't find the page or report you were looking for. It may have been removed, resolved, or moved.
+            </p>
+        </div>
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{% url 'home' %}" class="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 transition-colors">
+                Return Home
+            </a>
+            <a href="{% url 'item_list' %}" class="w-full sm:w-auto px-6 py-3 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
+                Browse Items
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
