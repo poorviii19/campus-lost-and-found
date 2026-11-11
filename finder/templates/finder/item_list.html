@@ -1,0 +1,218 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}Browse Items | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-100 pb-6">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold uppercase tracking-wider mb-2">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-brand-600"></i>
+                Verified Campus Directory
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Browse Items</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Explore approved lost and found reports. Use filters to locate your belongings quickly.
+            </p>
+        </div>
+        <a href="{% url 'report_item' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 transition-all self-start md:self-auto">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Report an Item
+        </a>
+    </div>
+
+    <!-- Search & Filter Bar Card -->
+    <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
+        <form method="GET" action="{% url 'item_list' %}" class="space-y-4">
+            
+            <!-- Row 1: Search Keyword -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ q }}" 
+                    placeholder="Search by keyword in title or description (e.g. Dell laptop, black umbrella, blue backpack)..." 
+                    class="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                >
+            </div>
+
+            <!-- Row 2: Filters Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                
+                <!-- Filter: Report Type -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                        Item Type
+                    </label>
+                    <select name="type" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">All Types (Lost &amp; Found)</option>
+                        <option value="lost" {% if selected_type == 'lost' %}selected{% endif %}>Lost Items Only</option>
+                        <option value="found" {% if selected_type == 'found' %}selected{% endif %}>Found Items Only</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Category -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                        Category
+                    </label>
+                    <select name="category" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filter: Location -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                        Location / Building
+                    </label>
+                    <input 
+                        type="text" 
+                        name="location" 
+                        value="{{ selected_location }}" 
+                        placeholder="e.g. Library, Cafeteria" 
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    >
+                </div>
+
+            </div>
+
+            <!-- Filter Buttons: Submit & Reset -->
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div class="text-xs text-gray-500 font-medium">
+                    Sorted by: <strong>Newest First</strong>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if q or selected_type or selected_category or selected_location %}
+                        <a href="{% url 'item_list' %}" class="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                            Reset Filters
+                        </a>
+                    {% endif %}
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors">
+                        <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+                        Filter Results
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Results Status Counter -->
+    <div class="flex items-center justify-between text-sm text-gray-500 px-1">
+        <div>
+            Showing <strong class="text-gray-900">{{ total_results }}</strong> verified item{{ total_results|pluralize }}
+            {% if q or selected_type or selected_category or selected_location %}
+                matching your filters
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Item Cards Grid -->
+    {% if items %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for item in items %}
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
+                    
+                    <!-- Item Photo / Placeholder -->
+                    <div class="h-44 w-full bg-gray-100 relative overflow-hidden flex items-center justify-center">
+                        {% if item.image_path %}
+                            <img src="/media/{{ item.image_path }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        {% else %}
+                            <div class="text-gray-400 flex flex-col items-center">
+                                <i data-lucide="image" class="w-10 h-10 mb-1 opacity-50"></i>
+                                <span class="text-[11px] font-medium">No photo provided</span>
+                            </div>
+                        {% endif %}
+
+                        <!-- Type Badge: Lost vs Found -->
+                        <div class="absolute top-3 left-3">
+                            {% if item.report_type == 'lost' %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-rose-600 text-white shadow">
+                                    <i data-lucide="help-circle" class="w-3 h-3"></i>
+                                    Lost
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-600 text-white shadow">
+                                    <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                                    Found
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Category Badge -->
+                        <div class="absolute top-3 right-3">
+                            <span class="bg-white/90 backdrop-blur-sm text-gray-700 text-[11px] font-semibold px-2 py-0.5 rounded-lg shadow-sm">
+                                {{ item.category }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-5 flex flex-col flex-grow">
+                        <h3 class="text-base font-bold text-gray-900 group-hover:text-brand-600 transition-colors line-clamp-1 mb-1.5">
+                            {{ item.title }}
+                        </h3>
+                        <p class="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed">
+                            {{ item.description }}
+                        </p>
+
+                        <!-- Metadata -->
+                        <div class="mt-auto pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-500">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0"></i>
+                                <span class="truncate">{{ item.location }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0"></i>
+                                <span>{{ item.date_lost_found }}</span>
+                            </div>
+                        </div>
+
+                        <!-- View Details Link -->
+                        <a href="{% url 'item_detail' item.id %}" class="mt-4 w-full text-center py-2.5 px-3 rounded-xl text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-600 hover:text-white transition-colors">
+                            View Details
+                        </a>
+                    </div>
+
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Friendly Empty State -->
+        <div class="bg-white rounded-3xl border border-gray-100 p-12 text-center shadow-sm">
+            <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="search-x" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">No Matching Items Found</h3>
+            <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">
+                {% if q or selected_type or selected_category or selected_location %}
+                    We couldn't find any reports matching your search and filter criteria. Try broadening your terms or resetting filters.
+                {% else %}
+                    There are currently no public item reports available on campus.
+                {% endif %}
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+                {% if q or selected_type or selected_category or selected_location %}
+                    <a href="{% url 'item_list' %}" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
+                        Clear All Filters
+                    </a>
+                {% endif %}
+                <a href="{% url 'report_item' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    Report an Item
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

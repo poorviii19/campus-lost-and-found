@@ -35,7 +35,7 @@ def home(request):
 
 
 # ==========================================
-# Authentication Views
+# Authentication Views (Phase 6)
 # ==========================================
 
 def user_register(request):
@@ -159,16 +159,50 @@ def report_item(request):
 
 
 # ==========================================
-# Protected View Placeholders
+# Browse, Search & Filter (Phase 8)
 # ==========================================
 
 def item_list(request):
-    """Browse items page (Full implementation in Phase 8)."""
-    return render(request, 'finder/home.html', {
-        'stats': ReportService.get_statistics(),
-        'recent_items': ReportService.get_recent_approved_reports(limit=6),
+    """
+    Public directory of approved lost and found reports:
+    - Supports text search across title and description (?q=...).
+    - Supports filtering by type ('lost' or 'found') (?type=...).
+    - Supports filtering by category (?category=...).
+    - Supports filtering by location (?location=...).
+    - Sorted by newest reports first.
+    - Only reports with status='Approved' are shown.
+    """
+    q = request.GET.get('q', '').strip()
+    type_filter = request.GET.get('type', '').strip().lower()
+    category_filter = request.GET.get('category', '').strip()
+    location_filter = request.GET.get('location', '').strip()
+
+    try:
+        items = ReportService.get_approved_reports(
+            search_query=q,
+            report_type=type_filter,
+            category=category_filter,
+            location=location_filter
+        )
+    except Exception as e:
+        items = []
+        messages.error(request, "Error retrieving items from database.")
+
+    context = {
+        'items': items,
         'categories': CATEGORIES,
-    })
+        'q': q,
+        'selected_type': type_filter,
+        'selected_category': category_filter,
+        'selected_location': location_filter,
+        'total_results': len(items),
+    }
+    return render(request, 'finder/item_list.html', context)
+
+
+# ==========================================
+# Protected View Placeholders
+# ==========================================
 
 def item_detail(request, item_id):
     """Item detail view (Full implementation in Phase 9)."""
