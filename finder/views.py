@@ -8,7 +8,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 
-from .models import ReportService, CATEGORIES, STATUS_PENDING
+from .models import (
+    ReportService,
+    CATEGORIES,
+    STATUS_PENDING,
+    STATUS_APPROVED,
+    STATUS_REJECTED,
+    STATUS_RESOLVED,
+)
 from .forms import StudentRegistrationForm, StudentLoginForm, ItemReportForm
 
 
@@ -22,7 +29,7 @@ def home(request):
     try:
         stats = ReportService.get_statistics()
         recent_items = ReportService.get_recent_approved_reports(limit=6)
-    except Exception as e:
+    except Exception:
         stats = {'total_lost': 0, 'total_found': 0, 'total_resolved': 0}
         recent_items = []
         messages.warning(request, "Could not connect to database to fetch stats.")
@@ -185,7 +192,7 @@ def item_list(request):
             category=category_filter,
             location=location_filter
         )
-    except Exception as e:
+    except Exception:
         items = []
         messages.error(request, "Error retrieving items from database.")
 
@@ -215,7 +222,7 @@ def item_detail(request, item_id):
     """
     try:
         item = ReportService.get_report_by_id(item_id)
-    except Exception as e:
+    except Exception:
         messages.error(request, "Unable to load item details due to a database connection issue.")
         return redirect('item_list')
 
@@ -224,7 +231,7 @@ def item_detail(request, item_id):
         return redirect('item_list')
 
     # Security check: If report is not Approved, only author or admin can view it
-    if item.get('status') != 'Approved':
+    if item.get('status') != STATUS_APPROVED:
         is_authorized = (
             request.user.is_authenticated and 
             (request.user.id == item.get('reporter_id') or request.user.is_staff or request.user.is_superuser)
@@ -260,11 +267,140 @@ def item_detail(request, item_id):
 
 
 # ==========================================
-# Protected View Placeholders
+# My Reports, Edit & Delete (Phase 10)
 # ==========================================
 
 @login_required
 def my_reports(request):
-    """User reports dashboard (Full implementation in Phase 10)."""
-    messages.info(request, "My Reports dashboard will be implemented in Phase 10.")
-    return redirect('home')
+    """
+    Personal dashboard for the logged-in student:
+    - Lists all reports submitted by this user (Pending, Approved, Rejected, Resolved).
+    - Summarizes report counts by status.
+    """
+    try:
+        reports = ReportService.get_user_reports(request.user.id)
+    except Exception:
+        reports = []
+        messages.error(request, "Could not fetch your reports from the database.")
+
+    counts = {
+        'pending': sum(1 for r in reports if r.get('status') == STATUS_PENDING),
+        'approved': sum(1 for r in reports if r.get('status') == STATUS_APPROVED),
+        'resolved': sum(1 for r in reports if r.get('status') == STATUS_RESOLVED),
+        'rejected': sum(1 for r in reports if r.get('status') == STATUS_REJECTED),
+    }
+
+    return render(request, 'finder/my_reports.html', {
+        'reports': reports,
+        'counts': counts,
+    })
+
+
+@login_required
+def edit_report(request, item_id):
+    """
+    Allows a student to edit details of a report they submitted:
+    - Verifies document ownership (user_id == reporter_id).
+    - Supports updating title, description, location, date, and photo.
+    - Automatically marks modified reports as 'Pending' for admin re-verification (unless already Resolved).
+    """
+    try:
+        item = ReportService.get_report_by_id(item_id)
+    except Exception:
+        messages.error(request, "Database error retrieving item.")
+        return redirect('my_reports')
+
+    if not item or item.get('reporter_id') != request.user.id:
+        messages.error(request, "Report not found or you do not have permission to edit it.")
+        return redirect('my_reports')
+
+    if request.method == 'POST':
+        form = ItemReportForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Check if a new image was uploaded to replace the existing one
+            image_path = item.get('image_path', '')
+            if request.FILES.get('image'):
+                uploaded_file = request.FILES['image']
+                ext = os.path.splitext(uploaded_file.name)[1].lower()
+                unique_filename = f"items/{uuid.uuid4().hex}{ext}"
+                image_path = default_storage.save(unique_filename, uploaded_file)
+
+            # Keep resolved if resolved, otherwise reset to Pending for admin review
+            new_status = STATUS_RESOLVED if item.get('status') == STATUS_RESOLVED else STATUS_PENDING
+
+            update_data = {
+                'report_type': form.cleaned_data['report_type'],
+                'title': form.cleaned_data['title'],
+                'category': form.cleaned_data['category'],
+                'description': form.cleaned_data['description'],
+                'location': form.cleaned_data['location'],
+                'date_lost_found': str(form.cleaned_data['date_lost_found']),
+                'image_path': image_path,
+                'status': new_status,
+            }
+
+            ReportService.update_report(item_id, update_data, user_id=request.user.id)
+            messages.success(request, f"Report for '{form.cleaned_data['title']}' has been updated successfully!")
+            return redirect('my_reports')
+        else:
+            messages.error(request, "Please correct the errors in the form below.")
+    else:
+        initial = {
+            'report_type': item.get('report_type'),
+            'title': item.get('title'),
+            'category': item.get('category'),
+            'description': item.get('description'),
+            'location': item.get('location'),
+            'date_lost_found': item.get('date_lost_found'),
+        }
+        form = ItemReportForm(initial=initial)
+
+    return render(request, 'finder/report_form.html', {
+        'form': form,
+        'is_edit': True,
+        'current_image': item.get('image_path', ''),
+    })
+
+
+@login_required
+def delete_report(request, item_id):
+    """
+    Allows a student to delete their own report:
+    - Verifies document ownership (user_id == reporter_id).
+    - Deletes document from MongoDB collection.
+    - Removes associated image from media storage.
+    """
+    if request.method == 'POST':
+        try:
+            item = ReportService.get_report_by_id(item_id)
+            if item and item.get('reporter_id') == request.user.id:
+                # Delete image file from media storage if exists
+                if item.get('image_path') and default_storage.exists(item['image_path']):
+                    default_storage.delete(item['image_path'])
+                ReportService.delete_report(item_id, user_id=request.user.id)
+                messages.success(request, f"Report for '{item['title']}' was deleted.")
+            else:
+                messages.error(request, "Permission denied or report does not exist.")
+        except Exception:
+            messages.error(request, "Error deleting report from database.")
+    return redirect('my_reports')
+
+
+@login_required
+def mark_resolved(request, item_id):
+    """
+    Allows a student to mark their own report as Resolved once an item is reunited/claimed:
+    - Verifies document ownership.
+    - Updates status to 'Resolved'.
+    """
+    if request.method == 'POST':
+        try:
+            item = ReportService.get_report_by_id(item_id)
+            if item and item.get('reporter_id') == request.user.id:
+                ReportService.update_report(item_id, {'status': STATUS_RESOLVED}, user_id=request.user.id)
+                messages.success(request, f"Item '{item['title']}' marked as Resolved! 🎉")
+            else:
+                messages.error(request, "Permission denied.")
+        except Exception:
+            messages.error(request, "Error updating status.")
+    return redirect('my_reports')
