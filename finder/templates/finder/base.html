@@ -70,6 +70,12 @@
                         <a href="{% url 'my_reports' %}" class="text-sm font-semibold {% if request.resolver_match.url_name == 'my_reports' %}text-brand-600{% else %}text-gray-600 hover:text-brand-600{% endif %} transition-colors">
                             My Reports
                         </a>
+                        {% if user.is_staff or user.is_superuser %}
+                            <a href="{% url 'admin_dashboard' %}" class="text-sm font-semibold {% if 'admin' in request.resolver_match.url_name %}text-indigo-600{% else %}text-gray-600 hover:text-indigo-600{% endif %} transition-colors flex items-center gap-1">
+                                <i data-lucide="shield" class="w-4 h-4 text-indigo-600"></i>
+                                Admin
+                            </a>
+                        {% endif %}
                         <a href="{% url 'report_item' %}" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all duration-200">
                             <i data-lucide="plus-circle" class="w-4 h-4"></i>
                             Report Item
@@ -120,6 +126,11 @@
                 <a href="{% url 'my_reports' %}" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-600">
                     My Reports
                 </a>
+                {% if user.is_staff or user.is_superuser %}
+                    <a href="{% url 'admin_dashboard' %}" class="block px-3 py-2 rounded-lg text-base font-medium text-indigo-700 bg-indigo-50">
+                        Admin Portal
+                    </a>
+                {% endif %}
                 <a href="{% url 'report_item' %}" class="block px-3 py-2 rounded-lg text-base font-medium bg-brand-600 text-white text-center">
                     Report Item
                 </a>

@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.files.storage import default_storage
 
 from .models import (
@@ -17,6 +17,16 @@ from .models import (
     STATUS_RESOLVED,
 )
 from .forms import StudentRegistrationForm, StudentLoginForm, ItemReportForm
+
+
+def staff_required(view_func):
+    """
+    Decorator that ensures the user is logged in and possesses staff or superuser privileges.
+    """
+    return user_passes_test(
+        lambda u: u.is_authenticated and (u.is_staff or u.is_superuser),
+        login_url='login'
+    )(view_func)
 
 
 def home(request):
@@ -317,7 +327,6 @@ def edit_report(request, item_id):
     if request.method == 'POST':
         form = ItemReportForm(request.POST, request.FILES)
         if form.is_valid():
-            # Check if a new image was uploaded to replace the existing one
             image_path = item.get('image_path', '')
             if request.FILES.get('image'):
                 uploaded_file = request.FILES['image']
@@ -325,7 +334,6 @@ def edit_report(request, item_id):
                 unique_filename = f"items/{uuid.uuid4().hex}{ext}"
                 image_path = default_storage.save(unique_filename, uploaded_file)
 
-            # Keep resolved if resolved, otherwise reset to Pending for admin review
             new_status = STATUS_RESOLVED if item.get('status') == STATUS_RESOLVED else STATUS_PENDING
 
             update_data = {
@@ -374,7 +382,6 @@ def delete_report(request, item_id):
         try:
             item = ReportService.get_report_by_id(item_id)
             if item and item.get('reporter_id') == request.user.id:
-                # Delete image file from media storage if exists
                 if item.get('image_path') and default_storage.exists(item['image_path']):
                     default_storage.delete(item['image_path'])
                 ReportService.delete_report(item_id, user_id=request.user.id)
@@ -404,3 +411,98 @@ def mark_resolved(request, item_id):
         except Exception:
             messages.error(request, "Error updating status.")
     return redirect('my_reports')
+
+
+# ==========================================
+# Admin Management & Moderation (Phase 11)
+# ==========================================
+
+@staff_required
+def admin_dashboard(request):
+    """
+    Staff / Administrator Portal:
+    - Displays all campus reports with live status metrics.
+    - Allows filtering by status (Pending, Approved, Resolved, Rejected).
+    - Supports search across title, student username, and location.
+    """
+    status_filter = request.GET.get('status', '').strip()
+    search_query = request.GET.get('q', '').strip()
+
+    try:
+        # Get filtered list for display
+        reports = ReportService.get_all_reports(
+            status_filter=status_filter,
+            search_query=search_query
+        )
+        # Fetch all reports to compute metric cards
+        all_reports = ReportService.get_all_reports()
+    except Exception:
+        reports = []
+        all_reports = []
+        messages.error(request, "Database connection error while retrieving reports.")
+
+    counts = {
+        'all': len(all_reports),
+        'pending': sum(1 for r in all_reports if r.get('status') == STATUS_PENDING),
+        'approved': sum(1 for r in all_reports if r.get('status') == STATUS_APPROVED),
+        'resolved': sum(1 for r in all_reports if r.get('status') == STATUS_RESOLVED),
+        'rejected': sum(1 for r in all_reports if r.get('status') == STATUS_REJECTED),
+    }
+
+    return render(request, 'finder/admin_dashboard.html', {
+        'reports': reports,
+        'counts': counts,
+        'status_filter': status_filter,
+        'search_query': search_query,
+    })
+
+
+@staff_required
+def admin_update_status(request, item_id, action):
+    """
+    Allows staff to update the verification status of a report:
+    - 'approve' -> Approved
+    - 'reject'  -> Rejected
+    - 'resolve' -> Resolved
+    """
+    if request.method == 'POST':
+        action_map = {
+            'approve': STATUS_APPROVED,
+            'reject': STATUS_REJECTED,
+            'resolve': STATUS_RESOLVED,
+        }
+        new_status = action_map.get(action.lower())
+        if new_status:
+            try:
+                success = ReportService.update_status(item_id, new_status)
+                if success:
+                    messages.success(request, f"Report status successfully updated to '{new_status}'.")
+                else:
+                    messages.error(request, "Failed to update report status.")
+            except Exception:
+                messages.error(request, "Database error updating report.")
+        else:
+            messages.error(request, "Invalid status action.")
+
+    return redirect('admin_dashboard')
+
+
+@staff_required
+def admin_delete_report(request, item_id):
+    """
+    Allows staff to permanently delete an inappropriate or spam report and its media file.
+    """
+    if request.method == 'POST':
+        try:
+            item = ReportService.get_report_by_id(item_id)
+            if item:
+                if item.get('image_path') and default_storage.exists(item['image_path']):
+                    default_storage.delete(item['image_path'])
+                ReportService.delete_report(item_id)
+                messages.success(request, f"Report '{item.get('title')}' permanently deleted by Admin.")
+            else:
+                messages.error(request, "Report not found.")
+        except Exception:
+            messages.error(request, "Error deleting report.")
+
+    return redirect('admin_dashboard')
