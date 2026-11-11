@@ -12,16 +12,25 @@ from django.conf import settings
 # Global client cache
 _client = None
 
+try:
+    import certifi
+    CA_FILE = certifi.where()
+except ImportError:
+    CA_FILE = None
+
 def get_mongo_client():
     """
     Returns a cached PyMongo MongoClient instance.
     Initializes the client if it does not already exist.
+    Uses certifi CA bundle on Windows to ensure robust TLS handshake with MongoDB Atlas.
     """
     global _client
     if _client is None:
         mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
-        # serverSelectionTimeoutMS ensures fast failure (5 seconds) if Atlas is unreachable
-        _client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+        client_kwargs = {'serverSelectionTimeoutMS': 5000}
+        if CA_FILE and ('mongodb+srv://' in mongo_uri or 'tls=true' in mongo_uri.lower()):
+            client_kwargs['tlsCAFile'] = CA_FILE
+        _client = MongoClient(mongo_uri, **client_kwargs)
     return _client
 
 def get_db():
@@ -47,7 +56,6 @@ def test_connection():
     """
     try:
         client = get_mongo_client()
-        # The 'ping' command is cheap and does not require write privileges
         client.admin.command('ping')
         db_name = os.getenv('MONGO_DB_NAME', 'campus_lost_found')
         return True, f"Successfully connected to MongoDB! Database: '{db_name}'"
@@ -59,7 +67,6 @@ def test_connection():
         return False, f"Unexpected error while connecting to MongoDB: {e}"
 
 if __name__ == '__main__':
-    # Allows testing the connection directly via: python finder/db.py
     import dotenv
     from pathlib import Path
     BASE_DIR = Path(__file__).resolve().parent.parent

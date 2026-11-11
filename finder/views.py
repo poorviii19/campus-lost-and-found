@@ -4,6 +4,7 @@ import datetime
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 
@@ -201,13 +202,66 @@ def item_list(request):
 
 
 # ==========================================
-# Protected View Placeholders
+# Item Details & Contact (Phase 9)
 # ==========================================
 
 def item_detail(request, item_id):
-    """Item detail view (Full implementation in Phase 9)."""
-    messages.info(request, "Item details view will be implemented in Phase 9.")
-    return redirect('home')
+    """
+    Item detail view:
+    - Retrieves document from MongoDB by ObjectId string.
+    - Ensures unapproved reports are accessible only to their author or staff.
+    - Retrieves reporter information from SQLite User model.
+    - Pre-composes a structured mailto subject & body for authenticated students.
+    """
+    try:
+        item = ReportService.get_report_by_id(item_id)
+    except Exception as e:
+        messages.error(request, "Unable to load item details due to a database connection issue.")
+        return redirect('item_list')
+
+    if not item:
+        messages.error(request, "Item report not found or has been removed.")
+        return redirect('item_list')
+
+    # Security check: If report is not Approved, only author or admin can view it
+    if item.get('status') != 'Approved':
+        is_authorized = (
+            request.user.is_authenticated and 
+            (request.user.id == item.get('reporter_id') or request.user.is_staff or request.user.is_superuser)
+        )
+        if not is_authorized:
+            messages.warning(request, "This report is currently pending verification or has not been approved.")
+            return redirect('item_list')
+
+    reporter = User.objects.filter(id=item.get('reporter_id')).first()
+    is_owner = request.user.is_authenticated and (request.user.id == item.get('reporter_id'))
+
+    # Pre-compose contact email details for authenticated students
+    contact_subject = f"Regarding your {item.get('report_type', 'item')} report: {item.get('title')}"
+    if request.user.is_authenticated:
+        contact_body = (
+            f"Hi {item.get('reporter_username')},\n\n"
+            f"I saw your report on the Campus Lost & Found Portal regarding: '{item.get('title')}'.\n\n"
+            f"Please let me know when and where on campus we can meet to verify and return the item.\n\n"
+            f"Sender Username: {request.user.username}\n"
+            f"Sender Email: {request.user.email}"
+        )
+    else:
+        contact_body = ""
+
+    context = {
+        'item': item,
+        'reporter': reporter,
+        'is_owner': is_owner,
+        'contact_subject': contact_subject,
+        'contact_body': contact_body,
+    }
+    return render(request, 'finder/item_detail.html', context)
+
+
+# ==========================================
+# Protected View Placeholders
+# ==========================================
 
 @login_required
 def my_reports(request):
