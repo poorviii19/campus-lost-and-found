@@ -1,0 +1,167 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}
+    {% if is_edit %}Edit Report | Campus Lost & Found{% else %}Report Lost or Found Item | Campus Lost & Found{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Top Breadcrumb / Back Link -->
+    <div class="mb-6">
+        <a href="{% if is_edit %}{% url 'my_reports' %}{% else %}{% url 'home' %}{% endif %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-brand-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            {% if is_edit %}Back to My Reports{% else %}Back to Home{% endif %}
+        </a>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-brand-600 to-indigo-700 p-8 text-white relative">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white">
+                    <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">
+                        {% if is_edit %}Edit Item Report{% else %}Report an Item{% endif %}
+                    </h1>
+                    <p class="text-sm text-brand-100 mt-1">
+                        {% if is_edit %}Update details for your reported item.{% else %}Fill in the details below to log a lost or found item on campus.{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Body -->
+        <form method="POST" enctype="multipart/form-data" class="p-8 sm:p-10 space-y-6" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl p-4 space-y-1">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Row 1: Report Type & Category -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Report Type -->
+                <div>
+                    <label for="{{ form.report_type.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                        Report Type <span class="text-rose-500">*</span>
+                    </label>
+                    {{ form.report_type }}
+                    {% if form.report_type.errors %}
+                        <p class="text-xs text-rose-600 mt-1">{{ form.report_type.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label for="{{ form.category.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                        Category <span class="text-rose-500">*</span>
+                    </label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <p class="text-xs text-rose-600 mt-1">{{ form.category.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Row 2: Title -->
+            <div>
+                <label for="{{ form.title.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Item Title / Name <span class="text-rose-500">*</span>
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Row 3: Description -->
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Detailed Description <span class="text-rose-500">*</span>
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.description.errors.0 }}</p>
+                {% endif %}
+                <p class="text-xs text-gray-400 mt-1">Include color, brand, stickers, unique marks, or contents to help verify ownership.</p>
+            </div>
+
+            <!-- Row 4: Location & Date -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Location -->
+                <div>
+                    <label for="{{ form.location.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                        Campus Location <span class="text-rose-500">*</span>
+                    </label>
+                    {{ form.location }}
+                    {% if form.location.errors %}
+                        <p class="text-xs text-rose-600 mt-1">{{ form.location.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-1">e.g. Science Library 2nd floor, Student Center cafeteria</p>
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label for="{{ form.date_lost_found.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                        Date Lost or Found <span class="text-rose-500">*</span>
+                    </label>
+                    {{ form.date_lost_found }}
+                    {% if form.date_lost_found.errors %}
+                        <p class="text-xs text-rose-600 mt-1">{{ form.date_lost_found.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Row 5: Photo Upload -->
+            <div class="pt-4 border-t border-gray-100">
+                <label for="{{ form.image.id_for_label }}" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Item Photo (Optional)
+                </label>
+
+                {% if current_image %}
+                    <div class="mb-3 flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                        <img src="/media/{{ current_image }}" alt="Current photo" class="w-14 h-14 object-cover rounded-xl border">
+                        <div class="text-xs text-gray-600">
+                            <p class="font-semibold text-gray-800">Current Photo Attached</p>
+                            <p class="text-gray-400">Upload a new file below only if you want to replace it.</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {{ form.image }}
+                {% if form.image.errors %}
+                    <p class="text-xs text-rose-600 mt-1">{{ form.image.errors.0 }}</p>
+                {% endif %}
+                <p class="text-xs text-gray-400 mt-1">{{ form.image.help_text }}</p>
+            </div>
+
+            <!-- Notice Box -->
+            <div class="bg-brand-50/70 border border-brand-100 rounded-2xl p-4 flex items-start gap-3">
+                <i data-lucide="shield-check" class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5"></i>
+                <div class="text-xs text-brand-900 leading-relaxed">
+                    <strong>Campus Verification Policy:</strong> To ensure student safety and prevent spam, newly reported items are automatically placed in <em>Pending</em> review by campus administrators before appearing on the public browse board.
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-2">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 hover:shadow-lg transition-all duration-200">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    {% if is_edit %}Save Changes{% else %}Submit Item Report{% endif %}
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+{% endblock %}
