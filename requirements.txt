@@ -1,0 +1,12 @@
+# Web Framework
+Django>=5.0,<5.2
+
+# MongoDB Driver & DNS Support for MongoDB Atlas
+pymongo>=4.6.0
+dnspython>=2.6.0
+
+# Environment Variables Management
+python-dotenv>=1.0.0
+
+# Image Processing (Django ImageField & uploads)
+Pillow>=10.0.0
