@@ -1,8 +1,6 @@
 {% extends 'finder/base.html' %}
 
-{% block title %}
-    {% if is_edit %}Edit Report | Campus Lost & Found{% else %}Report Lost or Found Item | Campus Lost & Found{% endblock %}
-{% endblock %}
+{% block title %}{% if is_edit %}Edit Report{% else %}Report Item{% endif %} | Campus Lost & Found{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
