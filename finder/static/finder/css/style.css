@@ -2,3 +2,72 @@
 html {
     scroll-behavior: smooth;
 }
+
+/* Floating Colorful Bubbles Animations */
+@keyframes floatBubbleSlow {
+    0%, 100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(14px, -24px) scale(1.05);
+    }
+    66% {
+        transform: translate(-16px, 12px) scale(0.96);
+    }
+}
+
+@keyframes floatBubbleMedium {
+    0%, 100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    50% {
+        transform: translate(-20px, -28px) scale(1.07);
+    }
+}
+
+@keyframes floatBubbleGentle {
+    0%, 100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    40% {
+        transform: translate(16px, 18px) scale(0.95);
+    }
+    80% {
+        transform: translate(-12px, -18px) scale(1.04);
+    }
+}
+
+.animate-bubble-1 {
+    animation: floatBubbleSlow 10s ease-in-out infinite;
+}
+
+.animate-bubble-2 {
+    animation: floatBubbleMedium 8s ease-in-out infinite;
+}
+
+.animate-bubble-3 {
+    animation: floatBubbleGentle 12s ease-in-out infinite;
+}
+
+.animate-bubble-4 {
+    animation: floatBubbleSlow 14s ease-in-out infinite reverse;
+}
+
+.animate-bubble-5 {
+    animation: floatBubbleMedium 9s ease-in-out infinite reverse;
+}
+
+.animate-bubble-6 {
+    animation: floatBubbleGentle 11s ease-in-out infinite;
+}
+
+/* Glass bubble reflection highlight */
+.bubble-specular {
+    position: absolute;
+    top: 15%;
+    left: 18%;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
