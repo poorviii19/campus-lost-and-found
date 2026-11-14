@@ -62,9 +62,11 @@
                     <a href="{% url 'home' %}" class="text-sm font-semibold {% if request.resolver_match.url_name == 'home' %}text-brand-600{% else %}text-gray-600 hover:text-brand-600{% endif %} transition-colors">
                         Home
                     </a>
+                    {% if user.is_authenticated %}
                     <a href="{% url 'item_list' %}" class="text-sm font-semibold {% if request.resolver_match.url_name == 'item_list' %}text-brand-600{% else %}text-gray-600 hover:text-brand-600{% endif %} transition-colors">
                         Browse Items
                     </a>
+                    {% endif %}
 
                     {% if user.is_authenticated %}
                         <a href="{% url 'my_reports' %}" class="text-sm font-semibold {% if request.resolver_match.url_name == 'my_reports' %}text-brand-600{% else %}text-gray-600 hover:text-brand-600{% endif %} transition-colors">
@@ -118,9 +120,11 @@
             <a href="{% url 'home' %}" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-600">
                 Home
             </a>
+            {% if user.is_authenticated %}
             <a href="{% url 'item_list' %}" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-600">
                 Browse Items
             </a>
+            {% endif %}
 
             {% if user.is_authenticated %}
                 <a href="{% url 'my_reports' %}" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-600">

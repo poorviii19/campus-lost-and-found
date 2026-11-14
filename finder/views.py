@@ -180,6 +180,7 @@ def report_item(request):
 # Browse, Search & Filter (Phase 8)
 # ==========================================
 
+@login_required
 def item_list(request):
     """
     Public directory of approved lost and found reports:
@@ -225,6 +226,7 @@ def item_list(request):
 # Item Details & Contact (Phase 9)
 # ==========================================
 
+@login_required
 def item_detail(request, item_id):
     """
     Item detail view:
