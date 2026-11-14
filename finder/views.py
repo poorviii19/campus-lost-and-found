@@ -39,10 +39,10 @@ def home(request):
     try:
         stats = ReportService.get_statistics()
         recent_items = ReportService.get_recent_approved_reports(limit=6)
-    except Exception:
+    except Exception as e:
         stats = {'total_lost': 0, 'total_found': 0, 'total_resolved': 0}
         recent_items = []
-        messages.warning(request, "Could not connect to database to fetch stats.")
+        messages.warning(request, f"Could not connect to database: {type(e).__name__}. Check your .env MONGO_URI.")
 
     context = {
         'stats': stats,
@@ -202,9 +202,12 @@ def item_list(request):
             category=category_filter,
             location=location_filter
         )
-    except Exception:
+    except Exception as e:
         items = []
-        messages.error(request, "Error retrieving items from database.")
+        messages.error(
+            request,
+            f"Could not connect to the database. Please try again shortly. ({type(e).__name__})"
+        )
 
     context = {
         'items': items,

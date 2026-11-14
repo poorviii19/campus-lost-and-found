@@ -5,32 +5,59 @@ to access the database and collections without re-initializing connections on ea
 """
 
 import os
+from pathlib import Path
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ConfigurationError
-from django.conf import settings
+from pymongo.errors import ConnectionFailure, ConfigurationError, ServerSelectionTimeoutError
 
-# Global client cache
-_client = None
+# --- Load .env early so MONGO_URI is always available, even in scripts ---
+try:
+    from dotenv import load_dotenv
+    _BASE_DIR = Path(__file__).resolve().parent.parent
+    load_dotenv(_BASE_DIR / '.env', override=False)
+except ImportError:
+    pass  # dotenv not installed — rely on environment variables being set externally
 
+# --- certifi CA bundle for Windows TLS compatibility with MongoDB Atlas ---
 try:
     import certifi
     CA_FILE = certifi.where()
 except ImportError:
     CA_FILE = None
 
+# Global client cache — reset whenever URI changes
+_client = None
+_cached_uri = None
+
+
 def get_mongo_client():
     """
     Returns a cached PyMongo MongoClient instance.
-    Initializes the client if it does not already exist.
-    Uses certifi CA bundle on Windows to ensure robust TLS handshake with MongoDB Atlas.
+    Initializes the client on first call and whenever MONGO_URI changes.
+
+    TLS Fix for Windows (TLSV1_ALERT_INTERNAL_ERROR):
+    - Uses certifi CA bundle to validate Atlas's certificate chain.
+    - Explicitly sets tls=True and tlsCAFile to bypass Windows Schannel issues.
     """
-    global _client
-    if _client is None:
-        mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
-        client_kwargs = {'serverSelectionTimeoutMS': 5000}
-        if CA_FILE and ('mongodb+srv://' in mongo_uri or 'tls=true' in mongo_uri.lower()):
+    global _client, _cached_uri
+
+    mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+
+    if _client is None or _cached_uri != mongo_uri:
+        is_atlas = 'mongodb+srv://' in mongo_uri or 'tls=true' in mongo_uri.lower()
+
+        client_kwargs = {
+            'serverSelectionTimeoutMS': 10000,
+            'connectTimeoutMS': 10000,
+            'socketTimeoutMS': 20000,
+        }
+
+        if is_atlas and CA_FILE:
+            client_kwargs['tls'] = True
             client_kwargs['tlsCAFile'] = CA_FILE
+
         _client = MongoClient(mongo_uri, **client_kwargs)
+        _cached_uri = mongo_uri
+
     return _client
 
 def get_db():
