@@ -176,50 +176,49 @@
     {% else %}
 
     <!-- ============================================================ -->
-    <!--  GUEST LANDING PAGE — Beautiful public-facing marketing page  -->
+    <!--  GUEST LANDING PAGE — Clean, Minimalist & Modern           -->
     <!-- ============================================================ -->
 
-    <!-- Hero (Guest) -->
-    <section class="relative overflow-hidden bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 text-white py-24 sm:py-32">
-        <!-- Decorative blobs -->
-        <div class="absolute -top-20 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-24 -right-16 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <!-- Minimalist Hero (Guest) -->
+    <section class="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28 border-b border-gray-100 bg-gradient-to-b from-slate-50/70 via-white to-white">
+        <!-- Subtle ambient background accents -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-brand-100/40 via-indigo-50/30 to-purple-50/30 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <!-- Badge -->
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white/90 text-xs font-semibold tracking-widest uppercase mb-8 border border-white/20">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                Trusted Campus Recovery Platform
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold tracking-wide uppercase mb-6 shadow-sm">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-600"></i>
+                Official Campus Recovery Hub
             </div>
 
-            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6">
-                Reuniting Campus<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300">One Item at a Time</span>
+            <!-- Modern Clean Headline -->
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.15] mb-5">
+                Lost something on campus?<br class="hidden sm:inline">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 via-indigo-600 to-indigo-700">We'll help you find it.</span>
             </h1>
 
-            <p class="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed mb-10">
-                CampusFind is your college's official lost &amp; found hub. Report a missing item or help a fellow student recover their belongings — all in one place.
+            <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mb-9">
+                A simple, secure lost and found platform for our college community. Report lost belongings, log found items, and connect with fellow students safely.
             </p>
 
-            <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="{% url 'register' %}" class="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-brand-700 bg-white hover:bg-brand-50 shadow-xl shadow-black/20 hover:shadow-2xl transition-all duration-200">
-                    <i data-lucide="user-plus" class="w-5 h-5"></i>
-                    Get Started — It's Free
+            <!-- Clean Minimalist Action Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-md mx-auto">
+                <a href="{% url 'register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200/80 hover:shadow-lg transition-all duration-200">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Get Started Free
                 </a>
-                <a href="{% url 'login' %}" class="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold text-white bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/25 hover:border-white/40 transition-all duration-200">
-                    <i data-lucide="log-in" class="w-5 h-5"></i>
-                    Already a Member? Log In
+                <a href="{% url 'login' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm transition-all duration-200">
+                    <i data-lucide="log-in" class="w-4 h-4 text-gray-500"></i>
+                    Student Log In
                 </a>
             </div>
 
-            <!-- Social proof strip -->
-            <div class="mt-12 flex flex-wrap items-center justify-center gap-6 text-white/60 text-xs font-medium">
-                <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> Free to register</span>
-                <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> Admin verified reports</span>
-                <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> Secure email contact</span>
-                <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> Photo upload support</span>
+            <!-- Minimalist trust / feature pills -->
+            <div class="mt-12 pt-8 border-t border-gray-100 flex flex-wrap items-center justify-center gap-y-2 gap-x-8 text-xs text-gray-500 font-medium">
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Free for all students</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Staff verified reports</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Secure campus contact</span>
+                <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Photo attachments</span>
             </div>
         </div>
     </section>
@@ -324,29 +323,25 @@
         </div>
     </section>
 
-    <!-- Final CTA Banner -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        <div class="relative overflow-hidden bg-gradient-to-r from-brand-600 to-indigo-700 rounded-3xl px-8 py-12 sm:px-14 text-center shadow-xl shadow-brand-200">
-            <!-- Background decoration -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
-            <div class="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full translate-y-1/3 -translate-x-1/4"></div>
-
-            <div class="relative z-10">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white/90 text-xs font-semibold uppercase tracking-wider mb-5">
-                    <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-300"></i> Join CampusFind Today
+    <!-- Final CTA Banner (Clean & Minimal) -->
+    <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="relative overflow-hidden bg-white border border-gray-150 rounded-3xl px-8 py-12 sm:px-14 text-center shadow-sm">
+            <div class="max-w-2xl mx-auto">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold uppercase tracking-wider mb-4 border border-brand-100/60">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-600"></i> Join CampusFind
                 </div>
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-3 tracking-tight">
-                    Your Belongings Deserve<br class="hidden sm:block"> to Come Home
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">
+                    Ready to recover or report a campus item?
                 </h2>
-                <p class="text-white/75 text-sm sm:text-base max-w-lg mx-auto mb-8 leading-relaxed">
-                    Hundreds of campus items are waiting to be reunited with their owners. Register in seconds and start searching or reporting right away.
+                <p class="text-gray-500 text-sm sm:text-base mb-8 leading-relaxed">
+                    Connect with fellow students today. Create your account in under a minute to start searching and reporting.
                 </p>
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <a href="{% url 'register' %}" class="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold text-brand-700 bg-white hover:bg-brand-50 shadow-lg transition-all duration-200">
-                        <i data-lucide="user-plus" class="w-5 h-5"></i> Create Free Account
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+                    <a href="{% url 'register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 transition-all duration-200">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i> Create Free Account
                     </a>
-                    <a href="{% url 'login' %}" class="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-sm transition-all duration-200">
-                        <i data-lucide="log-in" class="w-5 h-5"></i> Log In
+                    <a href="{% url 'login' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all duration-200">
+                        <i data-lucide="log-in" class="w-4 h-4 text-gray-500"></i> Log In
                     </a>
                 </div>
             </div>
