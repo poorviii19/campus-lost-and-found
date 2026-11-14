@@ -32,10 +32,25 @@ def staff_required(view_func):
 def home(request):
     """
     Home page view:
-    - Fetches live statistics from MongoDB Atlas (lost, found, resolved counts).
-    - Fetches the 6 most recently approved reports from MongoDB.
-    - Renders the landing page with Tailwind CSS.
+    - For logged-in users: Fetches live stats and 6 recent approved reports from MongoDB.
+    - For guests: Renders a beautiful marketing landing page with no data fetching.
     """
+    # Always build the guest category preview (no DB call needed)
+    categories_preview = [
+        {'label': 'Electronics', 'icon': 'laptop',      'bg': 'bg-blue-50',   'text': 'text-blue-600'},
+        {'label': 'Books',       'icon': 'book-open',   'bg': 'bg-amber-50',  'text': 'text-amber-600'},
+        {'label': 'Accessories', 'icon': 'watch',       'bg': 'bg-purple-50', 'text': 'text-purple-600'},
+        {'label': 'ID Cards',    'icon': 'badge-check', 'bg': 'bg-rose-50',   'text': 'text-rose-600'},
+        {'label': 'Clothing',    'icon': 'shirt',       'bg': 'bg-teal-50',   'text': 'text-teal-600'},
+        {'label': 'Other',       'icon': 'package',     'bg': 'bg-gray-100',  'text': 'text-gray-600'},
+    ]
+
+    if not request.user.is_authenticated:
+        return render(request, 'finder/home.html', {
+            'categories_preview': categories_preview,
+        })
+
+    # Logged-in: fetch live data from MongoDB
     try:
         stats = ReportService.get_statistics()
         recent_items = ReportService.get_recent_approved_reports(limit=6)
@@ -48,6 +63,7 @@ def home(request):
         'stats': stats,
         'recent_items': recent_items,
         'categories': CATEGORIES,
+        'categories_preview': categories_preview,
     }
     return render(request, 'finder/home.html', context)
 
