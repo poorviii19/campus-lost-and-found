@@ -213,15 +213,23 @@ class ReportService:
     @staticmethod
     def get_statistics():
         """
-        Calculates aggregate statistics for the portal:
-        - Total lost reports
-        - Total found reports
-        - Total resolved reports
+        Calculates aggregate statistics for the portal (only approved/verified items):
+        - Total verified lost reports (status='Approved')
+        - Total verified found reports (status='Approved')
+        - Total verified resolved reports (status='Resolved')
         """
         collection = get_reports_collection()
-        total_lost = collection.count_documents({'report_type': 'lost'})
-        total_found = collection.count_documents({'report_type': 'found'})
-        total_resolved = collection.count_documents({'status': STATUS_RESOLVED})
+        total_lost = collection.count_documents({
+            'report_type': 'lost',
+            'status': STATUS_APPROVED
+        })
+        total_found = collection.count_documents({
+            'report_type': 'found',
+            'status': STATUS_APPROVED
+        })
+        total_resolved = collection.count_documents({
+            'status': STATUS_RESOLVED
+        })
         return {
             'total_lost': total_lost,
             'total_found': total_found,

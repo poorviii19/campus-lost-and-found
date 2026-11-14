@@ -431,12 +431,16 @@ def mark_resolved(request, item_id):
     """
     Allows a student to mark their own report as Resolved once an item is reunited/claimed:
     - Verifies document ownership.
+    - Ensures only approved reports can be marked as resolved.
     - Updates status to 'Resolved'.
     """
     if request.method == 'POST':
         try:
             item = ReportService.get_report_by_id(item_id)
             if item and item.get('reporter_id') == request.user.id:
+                if item.get('status') != STATUS_APPROVED:
+                    messages.warning(request, "Only reports that have been approved by an administrator can be marked as resolved.")
+                    return redirect('my_reports')
                 ReportService.update_report(item_id, {'status': STATUS_RESOLVED}, user_id=request.user.id)
                 messages.success(request, f"Item '{item['title']}' marked as Resolved! 🎉")
             else:

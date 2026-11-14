@@ -35,12 +35,17 @@ class CampusLostAndFoundTests(TestCase):
     # 1. Home Page Tests
     # -------------------------------------------------------------------------
     def test_home_page_renders_successfully(self):
-        """Home page should return 200 OK and render brand hero section."""
+        """Home page should return 200 OK for guest and render landing section."""
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Lost Something?")
-        self.assertContains(response, "Report Lost Item")
-        self.assertContains(response, "Report Found Item")
+        self.assertContains(response, "Official Campus Recovery Hub")
+        self.assertContains(response, "Get Started Free")
+
+        # When logged in, should show full dashboard with action buttons
+        self.client.force_login(self.student)
+        auth_response = self.client.get('/')
+        self.assertEqual(auth_response.status_code, 200)
+        self.assertContains(auth_response, "Report Lost Item")
 
     # -------------------------------------------------------------------------
     # 2. Authentication Flow Tests
@@ -176,6 +181,7 @@ class CampusLostAndFoundTests(TestCase):
     # -------------------------------------------------------------------------
     def test_invalid_objectid_in_url_redirects_gracefully(self):
         """Accessing a malformed MongoDB ObjectId in the URL should not trigger a 500 server crash."""
+        self.client.force_login(self.student)
         response = self.client.get('/items/this-is-not-a-valid-id/')
         # Should gracefully redirect to item_list with an error flash message
         self.assertEqual(response.status_code, 302)
@@ -183,6 +189,7 @@ class CampusLostAndFoundTests(TestCase):
 
     def test_nonexistent_objectid_redirects_gracefully(self):
         """Accessing a valid 24-character hex ID that does not exist redirects gracefully."""
+        self.client.force_login(self.student)
         response = self.client.get('/items/507f1f77bcf86cd799439011/')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/items/')
