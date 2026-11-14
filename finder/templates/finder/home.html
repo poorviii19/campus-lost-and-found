@@ -8,7 +8,7 @@
     <!-- Hero Section -->
     <section class="relative bg-gradient-to-b from-brand-50 via-white to-gray-50 pt-12 pb-16 sm:pt-20 sm:pb-24 overflow-hidden border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            
+
             <!-- Campus Badge -->
             <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-100/80 text-brand-700 text-xs font-semibold tracking-wide uppercase mb-6 shadow-sm">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-600"></i>
@@ -24,46 +24,61 @@
                 Connect with your college community. Report lost belongings or help return found items back to their rightful owners safely.
             </p>
 
-            <!-- Action Buttons: Report Lost or Found -->
-            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
-                <a href="{% url 'report_item' %}?type=lost" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-200 hover:shadow-lg transition-all duration-200">
-                    <i data-lucide="help-circle" class="w-5 h-5"></i>
-                    Report Lost Item
-                </a>
-                <a href="{% url 'report_item' %}?type=found" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 hover:shadow-lg transition-all duration-200">
-                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                    Report Found Item
-                </a>
-            </div>
+            {% if user.is_authenticated %}
+                <!-- Logged-in: Show action buttons and search bar -->
+                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+                    <a href="{% url 'report_item' %}?type=lost" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-200 hover:shadow-lg transition-all duration-200">
+                        <i data-lucide="help-circle" class="w-5 h-5"></i>
+                        Report Lost Item
+                    </a>
+                    <a href="{% url 'report_item' %}?type=found" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 hover:shadow-lg transition-all duration-200">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                        Report Found Item
+                    </a>
+                </div>
 
-            <!-- Quick Search Bar -->
-            <div class="mt-10 max-w-2xl mx-auto">
-                <form action="{% url 'item_list' %}" method="GET" class="relative flex items-center">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                        <i data-lucide="search" class="w-5 h-5"></i>
-                    </div>
-                    <input 
-                        type="text" 
-                        name="q" 
-                        placeholder="Search for backpacks, ID cards, keys, water bottles..." 
-                        class="w-full pl-11 pr-28 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm"
-                    >
-                    <button 
-                        type="submit" 
-                        class="absolute right-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow transition-colors"
-                    >
-                        Search
-                    </button>
-                </form>
-            </div>
+                <!-- Quick Search Bar -->
+                <div class="mt-10 max-w-2xl mx-auto">
+                    <form action="{% url 'item_list' %}" method="GET" class="relative flex items-center">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </div>
+                        <input
+                            type="text"
+                            name="q"
+                            placeholder="Search for backpacks, ID cards, keys, water bottles..."
+                            class="w-full pl-11 pr-28 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm"
+                        >
+                        <button type="submit" class="absolute right-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow transition-colors">
+                            Search
+                        </button>
+                    </form>
+                </div>
+
+            {% else %}
+                <!-- Guest: Show Login / Register CTA -->
+                <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto">
+                    <a href="{% url 'login' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 hover:shadow-lg transition-all duration-200">
+                        <i data-lucide="log-in" class="w-5 h-5"></i>
+                        Log In to Access
+                    </a>
+                    <a href="{% url 'register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl text-base font-semibold text-gray-700 bg-white border border-gray-200 hover:border-brand-300 hover:text-brand-600 shadow-sm hover:shadow transition-all duration-200">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                        Create Account
+                    </a>
+                </div>
+                <p class="mt-4 text-xs text-gray-400">Free to join — register with your college email to get started.</p>
+            {% endif %}
 
         </div>
     </section>
 
-    <!-- Statistics Section -->
+    {% if user.is_authenticated %}
+
+    <!-- Statistics Section (logged-in only) -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             <!-- Stat: Lost Items -->
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-5">
                 <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
@@ -100,7 +115,7 @@
         </div>
     </section>
 
-    <!-- Categories Section -->
+    <!-- Categories Section (logged-in only) -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-8">
             <div>
@@ -114,8 +129,7 @@
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            
-            <!-- Electronics -->
+
             <a href="{% url 'item_list' %}?category=Electronics" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="laptop" class="w-6 h-6"></i>
@@ -123,7 +137,6 @@
                 <h3 class="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">Electronics</h3>
             </a>
 
-            <!-- Books -->
             <a href="{% url 'item_list' %}?category=Books" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="book-open" class="w-6 h-6"></i>
@@ -131,7 +144,6 @@
                 <h3 class="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">Books</h3>
             </a>
 
-            <!-- Accessories -->
             <a href="{% url 'item_list' %}?category=Accessories" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="watch" class="w-6 h-6"></i>
@@ -139,7 +151,6 @@
                 <h3 class="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">Accessories</h3>
             </a>
 
-            <!-- ID Cards -->
             <a href="{% url 'item_list' %}?category=ID Cards" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="badge-check" class="w-6 h-6"></i>
@@ -147,7 +158,6 @@
                 <h3 class="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">ID Cards</h3>
             </a>
 
-            <!-- Clothing -->
             <a href="{% url 'item_list' %}?category=Clothing" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="shirt" class="w-6 h-6"></i>
@@ -155,7 +165,6 @@
                 <h3 class="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">Clothing</h3>
             </a>
 
-            <!-- Other -->
             <a href="{% url 'item_list' %}?category=Other" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 text-center transition-all group">
                 <div class="w-12 h-12 mx-auto rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                     <i data-lucide="package" class="w-6 h-6"></i>
@@ -166,7 +175,7 @@
         </div>
     </section>
 
-    <!-- Recently Reported Items Section -->
+    <!-- Recently Reported Items Section (logged-in only) -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-8">
             <div>
@@ -183,8 +192,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for item in recent_items %}
                     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group">
-                        
-                        <!-- Item Image or Placeholder -->
+
                         <div class="h-48 w-full bg-gray-100 relative overflow-hidden flex items-center justify-center">
                             {% if item.image_path %}
                                 <img src="/media/{{ item.image_path }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -195,22 +203,18 @@
                                 </div>
                             {% endif %}
 
-                            <!-- Status Badge: Lost vs Found -->
                             <div class="absolute top-3 left-3">
                                 {% if item.report_type == 'lost' %}
                                     <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-600 text-white shadow">
-                                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-                                        Lost
+                                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Lost
                                     </span>
                                 {% else %}
                                     <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-600 text-white shadow">
-                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
-                                        Found
+                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Found
                                     </span>
                                 {% endif %}
                             </div>
 
-                            <!-- Category Badge -->
                             <div class="absolute top-3 right-3">
                                 <span class="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm">
                                     {{ item.category }}
@@ -218,16 +222,12 @@
                             </div>
                         </div>
 
-                        <!-- Card Body -->
                         <div class="p-5 flex flex-col flex-grow">
                             <h3 class="text-lg font-bold text-gray-900 group-hover:text-brand-600 transition-colors line-clamp-1 mb-2">
                                 {{ item.title }}
                             </h3>
-                            <p class="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">
-                                {{ item.description }}
-                            </p>
+                            <p class="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{{ item.description }}</p>
 
-                            <!-- Meta details: Location & Date -->
                             <div class="mt-auto pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-500">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
@@ -239,7 +239,6 @@
                                 </div>
                             </div>
 
-                            <!-- View Details Button -->
                             <a href="{% url 'item_detail' item.id %}" class="mt-4 w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-600 hover:text-white transition-colors">
                                 View Details
                             </a>
@@ -249,29 +248,84 @@
                 {% endfor %}
             </div>
         {% else %}
-            <!-- Friendly Empty State -->
             <div class="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
                 <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i data-lucide="package-check" class="w-8 h-8"></i>
                 </div>
                 <h3 class="text-lg font-bold text-gray-900 mb-1">No Active Reports Yet</h3>
                 <p class="text-sm text-gray-500 max-w-sm mx-auto mb-6">
-                    All campus items are safe and accounted for! Have you lost or found an item? Be the first to report it.
+                    All campus items are safe! Have you lost or found something? Be the first to report it.
                 </p>
                 <div class="flex items-center justify-center gap-3">
                     <a href="{% url 'report_item' %}?type=lost" class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        Report Lost Item
+                        <i data-lucide="plus" class="w-4 h-4"></i> Report Lost Item
                     </a>
                     <a href="{% url 'report_item' %}?type=found" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        Report Found Item
+                        <i data-lucide="plus" class="w-4 h-4"></i> Report Found Item
                     </a>
                 </div>
             </div>
         {% endif %}
-
     </section>
+
+    {% else %}
+
+    <!-- Guest Info Banner — shown instead of items -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-3xl border border-brand-100 shadow-sm p-10 text-center">
+            <div class="w-20 h-20 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <i data-lucide="lock" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Members-Only Access</h2>
+            <p class="text-gray-500 text-sm max-w-md mx-auto mb-8 leading-relaxed">
+                Lost &amp; found reports are only visible to registered campus members. Log in or create a free account to browse items, report belongings, and contact finders.
+            </p>
+
+            <!-- Feature Highlights -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
+                <div class="bg-rose-50 rounded-2xl p-4 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Browse Reports</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Search & filter all campus lost and found items</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-50 rounded-2xl p-4 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Report Items</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Submit lost or found reports with photos</p>
+                    </div>
+                </div>
+                <div class="bg-brand-50 rounded-2xl p-4 flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Contact Finders</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Reach out to reporters securely via email</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a href="{% url 'login' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-200 transition-all">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    Log In
+                </a>
+                <a href="{% url 'register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    Create Free Account
+                </a>
+            </div>
+        </div>
+    </section>
+
+    {% endif %}
 
 </div>
 {% endblock %}
