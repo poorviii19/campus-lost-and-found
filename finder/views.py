@@ -99,12 +99,15 @@ def user_register(request):
 
 def user_login(request):
     """
-    Student login view:
+    User login view (supports both Student and Admin/Staff logins):
     - Validates credentials using Django's built-in authentication system.
     - Establishes a session in SQLite django_session table.
-    - Redirects to intended protected page (next parameter) or home.
+    - If user is staff/admin and no specific destination was requested,
+      routes directly to the Admin Dashboard.
     """
     if request.user.is_authenticated:
+        if request.user.is_staff or request.user.is_superuser:
+            return redirect('admin_dashboard')
         return redirect('home')
 
     if request.method == 'POST':
@@ -113,14 +116,23 @@ def user_login(request):
             user = form.get_user()
             login(request, user)
             messages.success(request, f"Welcome back, {user.username}!")
-            next_url = request.GET.get('next') or request.POST.get('next') or 'home'
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if not next_url:
+                if user.is_staff or user.is_superuser:
+                    next_url = 'admin_dashboard'
+                else:
+                    next_url = 'home'
             return redirect(next_url)
         else:
             messages.error(request, "Invalid username or password. Please try again.")
     else:
         form = StudentLoginForm(request)
 
-    return render(request, 'finder/login.html', {'form': form})
+    role = request.GET.get('role', 'student').lower()
+    return render(request, 'finder/login.html', {
+        'form': form,
+        'initial_role': role,
+    })
 
 
 def user_logout(request):
