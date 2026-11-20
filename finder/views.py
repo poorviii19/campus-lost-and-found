@@ -2,6 +2,7 @@ import os
 import uuid
 import datetime
 from django.shortcuts import render, redirect
+from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
@@ -543,3 +544,123 @@ def admin_delete_report(request, item_id):
             messages.error(request, "Error deleting report.")
 
     return redirect('admin_dashboard')
+
+
+# ==========================================
+# Report Chat & Discussion (Admin & Reporter)
+# ==========================================
+
+@login_required
+def report_chat(request, item_id):
+    """
+    Direct Chat & Discussion portal for an item report:
+    - Allows the Student Reporter and Campus Staff/Admin to communicate directly.
+    - Strictly restricts access: only the report's owner and staff members can enter.
+    - Supports standard form submissions and renders conversation history.
+    """
+    try:
+        item = ReportService.get_report_by_id(item_id)
+    except Exception:
+        messages.error(request, "Database connection error.")
+        return redirect('item_list')
+
+    if not item:
+        messages.error(request, "Report not found.")
+        return redirect('item_list')
+
+    is_admin = bool(request.user.is_staff or request.user.is_superuser)
+    is_owner = bool(request.user.id == item.get('reporter_id'))
+
+    # Security check: Only author or admin can view/chat
+    if not (is_admin or is_owner):
+        messages.warning(
+            request,
+            "Access denied: This report discussion is private between the reporter and campus administration."
+        )
+        return redirect('item_detail', item_id=item_id)
+
+    sender_role = 'admin' if is_admin else 'reporter'
+
+    if request.method == 'POST':
+        message_text = request.POST.get('message', '').strip()
+        if message_text:
+            msg = ReportService.add_message(
+                report_id=item_id,
+                sender_id=request.user.id,
+                sender_username=request.user.username,
+                sender_role=sender_role,
+                message_text=message_text
+            )
+            # Support AJAX / fetch response
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+                return JsonResponse({'success': True, 'message': msg})
+        return redirect('report_chat', item_id=item_id)
+
+    reporter = User.objects.filter(id=item.get('reporter_id')).first()
+    messages_list = item.get('messages', [])
+
+    context = {
+        'item': item,
+        'reporter': reporter,
+        'messages_list': messages_list,
+        'is_admin': is_admin,
+        'is_owner': is_owner,
+        'sender_role': sender_role,
+    }
+    return render(request, 'finder/report_chat.html', context)
+
+
+@login_required
+def report_chat_api(request, item_id):
+    """
+    JSON API endpoint for real-time chat polling and AJAX messaging.
+    """
+    try:
+        item = ReportService.get_report_by_id(item_id)
+    except Exception:
+        return JsonResponse({'error': 'Database error'}, status=500)
+
+    if not item:
+        return JsonResponse({'error': 'Report not found'}, status=404)
+
+    is_admin = bool(request.user.is_staff or request.user.is_superuser)
+    is_owner = bool(request.user.id == item.get('reporter_id'))
+
+    if not (is_admin or is_owner):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    sender_role = 'admin' if is_admin else 'reporter'
+
+    if request.method == 'POST':
+        import json
+        message_text = ''
+        if request.content_type == 'application/json':
+            try:
+                body = json.loads(request.body.decode('utf-8'))
+                message_text = body.get('message', '').strip()
+            except Exception:
+                message_text = ''
+        else:
+            message_text = request.POST.get('message', '').strip()
+
+        if not message_text:
+            return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+
+        msg = ReportService.add_message(
+            report_id=item_id,
+            sender_id=request.user.id,
+            sender_username=request.user.username,
+            sender_role=sender_role,
+            message_text=message_text
+        )
+        if msg:
+            return JsonResponse({'success': True, 'message': msg})
+        return JsonResponse({'error': 'Failed to save message'}, status=500)
+
+    # GET: return list of messages
+    messages_list = item.get('messages', [])
+    return JsonResponse({
+        'messages': messages_list,
+        'status': item.get('status'),
+        'total': len(messages_list),
+    })

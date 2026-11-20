@@ -7,6 +7,7 @@ Because MongoDB Atlas is a NoSQL document database, we use PyMongo directly to p
 """
 
 from datetime import datetime
+import uuid
 from bson import ObjectId
 from bson.errors import InvalidId
 from .db import get_reports_collection
@@ -235,3 +236,52 @@ class ReportService:
             'total_found': total_found,
             'total_resolved': total_resolved,
         }
+
+    @staticmethod
+    def add_message(report_id, sender_id, sender_username, sender_role, message_text):
+        """
+        Appends a chat message to the report's 'messages' array in MongoDB.
+        sender_role is typically 'admin' or 'reporter'.
+        """
+        try:
+            obj_id = ObjectId(report_id)
+        except (InvalidId, TypeError):
+            return None
+
+        clean_text = message_text.strip()
+        if not clean_text:
+            return None
+
+        collection = get_reports_collection()
+        now = datetime.utcnow()
+        message_doc = {
+            'id': uuid.uuid4().hex[:12],
+            'sender_id': int(sender_id),
+            'sender_username': str(sender_username),
+            'sender_role': str(sender_role),
+            'message': clean_text,
+            'created_at': now.strftime('%b %d, %Y %I:%M %p'),
+            'timestamp': now.isoformat(),
+        }
+
+        result = collection.update_one(
+            {'_id': obj_id},
+            {
+                '$push': {'messages': message_doc},
+                '$set': {'updated_at': now}
+            }
+        )
+
+        if result.matched_count > 0:
+            return message_doc
+        return None
+
+    @staticmethod
+    def get_messages(report_id):
+        """
+        Retrieves the list of chat messages for a given report.
+        """
+        report = ReportService.get_report_by_id(report_id)
+        if not report:
+            return []
+        return report.get('messages', [])

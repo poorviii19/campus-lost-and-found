@@ -1,10 +1,13 @@
 import io
+import json
+from unittest.mock import patch
+from bson import ObjectId
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 
-from .models import CATEGORIES, STATUS_APPROVED, STATUS_PENDING
+from .models import CATEGORIES, STATUS_APPROVED, STATUS_PENDING, ReportService, get_reports_collection
 from .forms import StudentRegistrationForm, ItemReportForm
 
 
@@ -199,3 +202,105 @@ class CampusLostAndFoundTests(TestCase):
         response = self.client.get('/nonexistent-page-url-xyz/')
         self.assertEqual(response.status_code, 404)
         self.assertContains(response, "Lost Your Way?", status_code=404)
+
+    # -------------------------------------------------------------------------
+    # 6. Report Discussion Chat Feature Tests
+    # -------------------------------------------------------------------------
+    def test_chat_unauthenticated_redirects_to_login(self):
+        """Anonymous access to chat endpoint redirects to login."""
+        response = self.client.get('/reports/507f1f77bcf86cd799439011/chat/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/?next=', response.url)
+
+    @patch('finder.views.ReportService.get_report_by_id')
+    def test_chat_nonexistent_report_redirects(self, mock_get_report):
+        """Accessing chat for non-existent report ID redirects to item list."""
+        mock_get_report.return_value = None
+        self.client.force_login(self.student)
+        response = self.client.get('/reports/507f1f77bcf86cd799439011/chat/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/items/')
+
+    @patch('finder.views.ReportService.get_report_by_id')
+    @patch('finder.views.ReportService.add_message')
+    @patch('finder.views.ReportService.get_messages')
+    def test_chat_owner_and_admin_access_and_messaging(self, mock_get_messages, mock_add_message, mock_get_report):
+        """Report owner and admin can access chat, exchange messages, and query API."""
+        mock_report = {
+            'id': '507f1f77bcf86cd799439011',
+            '_id': ObjectId('507f1f77bcf86cd799439011'),
+            'reporter_id': self.student.id,
+            'reporter_username': self.student.username,
+            'report_type': 'lost',
+            'title': 'Test Chat Umbrella',
+            'category': 'Accessories',
+            'description': 'Black umbrella left in campus library',
+            'location': 'Library 2nd Floor',
+            'status': 'Approved',
+            'messages': []
+        }
+        mock_get_report.return_value = mock_report
+        mock_get_messages.return_value = []
+        mock_add_message.return_value = {
+            'id': 'abc12345',
+            'sender_id': self.student.id,
+            'sender_username': self.student.username,
+            'sender_role': 'reporter',
+            'message': 'Hello admin, any updates on my umbrella?',
+            'created_at': 'Nov 20, 2026 01:00 PM',
+            'timestamp': '2026-11-20T13:00:00',
+        }
+
+        # 1. Owner should be able to view chat page
+        self.client.force_login(self.student)
+        res_student = self.client.get('/reports/507f1f77bcf86cd799439011/chat/')
+        self.assertEqual(res_student.status_code, 200)
+        self.assertContains(res_student, "Test Chat Umbrella")
+        self.assertContains(res_student, "Chatting as Reporter")
+
+        # 2. Third-party student should be forbidden/redirected
+        other_student = User.objects.create_user(
+            username='unauthorized_student',
+            email='other@campus.edu',
+            password='OtherPassword@123'
+        )
+        self.client.force_login(other_student)
+        res_other = self.client.get('/reports/507f1f77bcf86cd799439011/chat/')
+        self.assertEqual(res_other.status_code, 302)
+        self.assertEqual(res_other.url, '/items/507f1f77bcf86cd799439011/')
+
+        # 3. Campus Admin should be able to view chat page
+        self.client.force_login(self.admin)
+        res_admin = self.client.get('/reports/507f1f77bcf86cd799439011/chat/')
+        self.assertEqual(res_admin.status_code, 200)
+        self.assertContains(res_admin, "Chatting as Staff Admin")
+
+        # 4. Student sends a message via POST form
+        self.client.force_login(self.student)
+        post_res = self.client.post('/reports/507f1f77bcf86cd799439011/chat/', {
+            'message': 'Hello admin, any updates on my umbrella?'
+        })
+        self.assertEqual(post_res.status_code, 302)
+        self.assertTrue(mock_add_message.called)
+
+        # 5. Admin sends a reply via JSON API endpoint
+        self.client.force_login(self.admin)
+        api_post_res = self.client.post(
+            '/reports/507f1f77bcf86cd799439011/chat/api/',
+            data=json.dumps({'message': 'Yes, someone turned in an umbrella at the front desk.'}),
+            content_type='application/json'
+        )
+        self.assertEqual(api_post_res.status_code, 200)
+        api_post_data = api_post_res.json()
+        self.assertTrue(api_post_data.get('success'))
+
+        # 6. Query messages via GET API
+        mock_report['messages'] = [
+            {'message': 'Hello admin, any updates on my umbrella?', 'sender_username': 'teststudent'},
+            {'message': 'Yes, someone turned in an umbrella at the front desk.', 'sender_username': 'campusadmin'},
+        ]
+        api_get_res = self.client.get('/reports/507f1f77bcf86cd799439011/chat/api/')
+        self.assertEqual(api_get_res.status_code, 200)
+        api_get_data = api_get_res.json()
+        self.assertEqual(len(api_get_data.get('messages', [])), 2)
+        self.assertEqual(api_get_data['messages'][0]['message'], 'Hello admin, any updates on my umbrella?')

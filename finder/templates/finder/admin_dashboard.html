@@ -194,6 +194,15 @@
                                 <td class="py-4 px-6 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
                                         
+                                        <!-- Chat with Reporter Action -->
+                                        <a href="{% url 'report_chat' report.id %}" class="px-2.5 py-1.5 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-semibold transition-colors flex items-center gap-1" title="Chat with reporter">
+                                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                            Chat
+                                            {% if report.messages %}
+                                                <span class="ml-0.5 px-1.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] leading-none">{{ report.messages|length }}</span>
+                                            {% endif %}
+                                        </a>
+
                                         <!-- Approve Action -->
                                         {% if report.status != 'Approved' %}
                                             <form method="POST" action="{% url 'admin_update_status' report.id 'approve' %}">

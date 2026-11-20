@@ -12,6 +12,10 @@ urlpatterns = [
     # Item Reporting
     path('report/', views.report_item, name='report_item'),
 
+    # Report Discussion / Chatbot (Admin & Reporter)
+    path('reports/<str:item_id>/chat/', views.report_chat, name='report_chat'),
+    path('reports/<str:item_id>/chat/api/', views.report_chat_api, name='report_chat_api'),
+
     # My Reports & Management (Phase 10)
     path('my-reports/', views.my_reports, name='my_reports'),
     path('my-reports/edit/<str:item_id>/', views.edit_report, name='edit_report'),

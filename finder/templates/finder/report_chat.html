@@ -1,0 +1,357 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}Chat: {{ item.title }} | Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Top Navigation / Breadcrumb -->
+    <div class="flex items-center justify-between mb-4">
+        <a href="{% if is_admin %}{% url 'admin_dashboard' %}{% else %}{% url 'item_detail' item.id %}{% endif %}" class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-brand-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            {% if is_admin %}Back to Admin Dashboard{% else %}Back to Item Details{% endif %}
+        </a>
+
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold 
+                {% if is_admin %}bg-indigo-50 text-indigo-700 border border-indigo-200
+                {% else %}bg-brand-50 text-brand-700 border border-brand-200{% endif %}">
+                {% if is_admin %}
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    Chatting as Staff Admin
+                {% else %}
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-brand-600"></i>
+                    Chatting as Reporter
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Main Chat Card -->
+    <div class="bg-white rounded-3xl border border-gray-150 shadow-xl overflow-hidden flex flex-col h-[75vh] min-h-[550px]">
+
+        <!-- Report Context Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-150 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <!-- Thumbnail -->
+                <div class="w-12 h-12 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {% if item.image_path %}
+                        <img src="/media/{{ item.image_path }}" alt="{{ item.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <i data-lucide="image" class="w-6 h-6 text-gray-400"></i>
+                    {% endif %}
+                </div>
+
+                <!-- Info -->
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-extrabold text-gray-900 truncate">{{ item.title }}</h2>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                            {% if item.report_type == 'lost' %}bg-rose-50 text-rose-700 border border-rose-200
+                            {% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                            {{ item.report_type }}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                        <span class="flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3 h-3 text-gray-400"></i>
+                            {{ item.location }}
+                        </span>
+                        <span>&bull;</span>
+                        <span>Reporter: <strong class="text-gray-700">@{{ item.reporter_username }}</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Pill & Quick Detail Link -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold
+                    {% if item.status == 'Approved' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                    {% elif item.status == 'Resolved' %}bg-brand-50 text-brand-700 border border-brand-200
+                    {% elif item.status == 'Rejected' %}bg-rose-50 text-rose-700 border border-rose-200
+                    {% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                    {{ item.status }}
+                </span>
+                <a href="{% url 'item_detail' item.id %}" target="_blank" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-gray-100 rounded-xl transition-colors" title="Open full item page">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Chat Messages Scroll Container -->
+        <div id="chatMessagesContainer" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/50">
+
+            <!-- Welcome Assistant Card -->
+            <div class="bg-white border border-brand-100 rounded-2xl p-4 sm:p-5 shadow-sm max-w-lg mx-auto text-center space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto shadow-sm">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-900">Official Report Discussion Assistant</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">
+                    This is a private discussion thread for <strong>"{{ item.title }}"</strong>. The reporter and campus staff can use this space to verify item details, ask questions, and coordinate handoffs.
+                </p>
+                <div class="pt-1 flex items-center justify-center gap-2 text-[11px] text-gray-400">
+                    <span class="flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i> Encrypted campus thread</span>
+                    <span>&bull;</span>
+                    <span>Real-time updates</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Messages List -->
+            <div id="messagesFeed" class="space-y-4">
+                {% for msg in messages_list %}
+                    {% if msg.sender_id == request.user.id %}
+                        <!-- Outgoing Message (Current User) -->
+                        <div class="flex flex-col items-end space-y-1">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-[11px] text-gray-400">{{ msg.created_at }}</span>
+                                <span class="text-xs font-bold text-gray-700">You</span>
+                            </div>
+                            <div class="max-w-[85%] sm:max-w-[70%] bg-brand-600 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-md shadow-brand-200/50 text-sm leading-relaxed whitespace-pre-wrap">
+                                {{ msg.message }}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Incoming Message (Other Party) -->
+                        <div class="flex flex-col items-start space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-gray-900">@{{ msg.sender_username }}</span>
+                                {% if msg.sender_role == 'admin' %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+                                        <i data-lucide="shield" class="w-2.5 h-2.5 text-indigo-600"></i>
+                                        Staff Admin
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-1">
+                                        <i data-lucide="user" class="w-2.5 h-2.5 text-gray-600"></i>
+                                        Reporter
+                                    </span>
+                                {% endif %}
+                                <span class="text-[11px] text-gray-400">{{ msg.created_at }}</span>
+                            </div>
+                            <div class="max-w-[85%] sm:max-w-[70%] bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-xs px-4 py-3 shadow-sm text-sm leading-relaxed whitespace-pre-wrap">
+                                {{ msg.message }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-150 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1 flex-shrink-0">
+                <i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i> Quick Prompts:
+            </span>
+            {% if is_admin %}
+                <button type="button" onclick="insertPrompt('Can you provide any identifying marks or serial numbers for this item?')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    Identifying marks / serial #?
+                </button>
+                <button type="button" onclick="insertPrompt('Please bring your college ID to claim or drop off this item at the Security Desk.')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    Bring ID to Security Desk
+                </button>
+                <button type="button" onclick="insertPrompt('Where was the exact location on campus you last saw or found this?')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    Exact campus location?
+                </button>
+            {% else %}
+                <button type="button" onclick="insertPrompt('I have proof of ownership and can provide additional details if needed.')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    I have proof of ownership
+                </button>
+                <button type="button" onclick="insertPrompt('What are the office hours to collect or hand over this item?')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    What are the office hours?
+                </button>
+                <button type="button" onclick="insertPrompt('Thank you, I will visit the campus office today.')" class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700 whitespace-nowrap transition-colors">
+                    Will visit office today
+                </button>
+            {% endif %}
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="p-3 sm:p-4 bg-white border-t border-gray-150">
+            <form id="chatForm" method="POST" action="{% url 'report_chat' item.id %}" class="flex items-center gap-2">
+                {% csrf_token %}
+                <div class="relative flex-1">
+                    <input 
+                        type="text" 
+                        name="message" 
+                        id="messageInput" 
+                        placeholder="{% if is_admin %}Type an inquiry or instruction for the reporter...{% else %}Type a message for the campus administrator...{% endif %}"
+                        class="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-gray-50/50"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
+                <button 
+                    type="submit" 
+                    id="sendBtn"
+                    class="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-200 transition-all flex items-center gap-1.5 flex-shrink-0"
+                >
+                    <span>Send</span>
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Real-time Polling & AJAX Script -->
+<script>
+    const currentUserId = {{ request.user.id }};
+    const currentUsername = "{{ request.user.username }}";
+    const reportId = "{{ item.id }}";
+    const apiPollUrl = "{% url 'report_chat_api' item.id %}";
+
+    const chatContainer = document.getElementById('chatMessagesContainer');
+    const messagesFeed = document.getElementById('messagesFeed');
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    // Scroll to bottom
+    function scrollToBottom() {
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+
+    // Insert quick prompt into input
+    function insertPrompt(text) {
+        if (messageInput) {
+            messageInput.value = text;
+            messageInput.focus();
+        }
+    }
+
+    // Initial scroll on load
+    scrollToBottom();
+
+    // Track known message IDs
+    const knownMessageIds = new Set();
+    {% for msg in messages_list %}
+        knownMessageIds.add("{{ msg.id }}");
+    {% endfor %}
+
+    // Helper to create message bubble DOM
+    function appendMessage(msg) {
+        if (knownMessageIds.has(msg.id)) return;
+        knownMessageIds.add(msg.id);
+
+        const isMe = (parseInt(msg.sender_id) === currentUserId);
+        const wrapper = document.createElement('div');
+
+        if (isMe) {
+            wrapper.className = "flex flex-col items-end space-y-1";
+            wrapper.innerHTML = `
+                <div class="flex items-baseline gap-2">
+                    <span class="text-[11px] text-gray-400">${escapeHtml(msg.created_at)}</span>
+                    <span class="text-xs font-bold text-gray-700">You</span>
+                </div>
+                <div class="max-w-[85%] sm:max-w-[70%] bg-brand-600 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-md shadow-brand-200/50 text-sm leading-relaxed whitespace-pre-wrap">
+                    ${escapeHtml(msg.message)}
+                </div>
+            `;
+        } else {
+            wrapper.className = "flex flex-col items-start space-y-1";
+            const roleBadge = (msg.sender_role === 'admin') 
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1"><i data-lucide="shield" class="w-2.5 h-2.5 text-indigo-600"></i>Staff Admin</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-1"><i data-lucide="user" class="w-2.5 h-2.5 text-gray-600"></i>Reporter</span>`;
+
+            wrapper.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-900">@${escapeHtml(msg.sender_username)}</span>
+                    ${roleBadge}
+                    <span class="text-[11px] text-gray-400">${escapeHtml(msg.created_at)}</span>
+                </div>
+                <div class="max-w-[85%] sm:max-w-[70%] bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-xs px-4 py-3 shadow-sm text-sm leading-relaxed whitespace-pre-wrap">
+                    ${escapeHtml(msg.message)}
+                </div>
+            `;
+        }
+
+        messagesFeed.appendChild(wrapper);
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.innerText = text;
+        return div.innerHTML;
+    }
+
+    // Handle AJAX Form Submit
+    if (chatForm) {
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            messageInput.value = '';
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch(chatForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: new URLSearchParams({
+                        'message': text,
+                        'csrfmiddlewaretoken': csrfToken
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.message) {
+                        appendMessage(data.message);
+                    }
+                } else {
+                    // Fallback to standard submission if API fails
+                    chatForm.submit();
+                }
+            } catch (err) {
+                console.error("Chat send error:", err);
+                chatForm.submit();
+            } finally {
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        });
+    }
+
+    // Auto-poll for new incoming messages every 3 seconds
+    setInterval(async function() {
+        try {
+            const res = await fetch(apiPollUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.messages && Array.isArray(data.messages)) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg);
+                    });
+                }
+            }
+        } catch (e) {
+            // Silently ignore background poll errors
+        }
+    }, 3000);
+</script>
+{% endblock %}
