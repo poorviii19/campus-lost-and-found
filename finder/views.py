@@ -16,6 +16,9 @@ from .models import (
     STATUS_APPROVED,
     STATUS_REJECTED,
     STATUS_RESOLVED,
+    CoinWallet,
+    CoinTransaction,
+    CampusVendor,
 )
 from .forms import StudentRegistrationForm, StudentLoginForm, ItemReportForm
 
@@ -430,10 +433,8 @@ def delete_report(request, item_id):
 @login_required
 def mark_resolved(request, item_id):
     """
-    Allows a student to mark their own report as Resolved once an item is reunited/claimed:
-    - Verifies document ownership.
-    - Ensures only approved reports can be marked as resolved.
-    - Updates status to 'Resolved'.
+    Allows a student to mark their own report as Resolved once an item is reunited/claimed.
+    Awards 5 CampusCoins to the reporter on successful resolution.
     """
     if request.method == 'POST':
         try:
@@ -443,7 +444,11 @@ def mark_resolved(request, item_id):
                     messages.warning(request, "Only reports that have been approved by an administrator can be marked as resolved.")
                     return redirect('my_reports')
                 ReportService.update_report(item_id, {'status': STATUS_RESOLVED}, user_id=request.user.id)
-                messages.success(request, f"Item '{item['title']}' marked as Resolved! 🎉")
+
+                # 🪙 Award 5 CampusCoins to the reporter
+                _award_resolution_coins(request.user, item, item_id)
+
+                messages.success(request, f"Item '{item['title']}' marked as Resolved! 🎉 You earned 5 CampusCoins! 🪙")
             else:
                 messages.error(request, "Permission denied.")
         except Exception:
@@ -498,10 +503,8 @@ def admin_dashboard(request):
 @staff_required
 def admin_update_status(request, item_id, action):
     """
-    Allows staff to update the verification status of a report:
-    - 'approve' -> Approved
-    - 'reject'  -> Rejected
-    - 'resolve' -> Resolved
+    Allows staff to update the verification status of a report.
+    Awards 5 CampusCoins to the reporter when admin resolves a 'found' item.
     """
     if request.method == 'POST':
         action_map = {
@@ -512,9 +515,17 @@ def admin_update_status(request, item_id, action):
         new_status = action_map.get(action.lower())
         if new_status:
             try:
+                item = ReportService.get_report_by_id(item_id)
                 success = ReportService.update_status(item_id, new_status)
                 if success:
                     messages.success(request, f"Report status successfully updated to '{new_status}'.")
+                    # 🪙 Award coins when admin marks as Resolved
+                    if new_status == STATUS_RESOLVED and item:
+                        try:
+                            reporter = User.objects.get(id=item.get('reporter_id'))
+                            _award_resolution_coins(reporter, item, item_id)
+                        except (User.DoesNotExist, Exception):
+                            pass
                 else:
                     messages.error(request, "Failed to update report status.")
             except Exception:
@@ -664,3 +675,204 @@ def report_chat_api(request, item_id):
         'status': item.get('status'),
         'total': len(messages_list),
     })
+
+
+# ===========================================================================
+# CampusCoin Rewards System Views
+# ===========================================================================
+
+COINS_PER_RESOLUTION = 5
+MIN_REDEEM_BALANCE = 50
+
+
+def _award_resolution_coins(user, item, item_id):
+    """
+    Internal helper: awards 5 CampusCoins to `user` for a resolved report.
+    Called by both student mark_resolved and admin_update_status.
+    Safe to call in a try/except – never raises.
+    """
+    try:
+        wallet = CoinWallet.get_or_create_wallet(user)
+        report_type = item.get('report_type', '')
+        title = item.get('title', 'item')
+        if report_type == 'found':
+            desc = f"🎁 Rewarded for returning found item: {title}"
+        else:
+            desc = f"🎁 Item successfully recovered: {title}"
+        wallet.add_coins(COINS_PER_RESOLUTION, description=desc, report_id=str(item_id))
+    except Exception:
+        pass
+
+
+@login_required
+def coin_wallet(request):
+    """
+    Student wallet dashboard:
+    - Shows current balance, lifetime stats
+    - Shows full transaction history
+    - Shows active campus vendors accepting CampusCoin
+    """
+    wallet = CoinWallet.get_or_create_wallet(request.user)
+    transactions = wallet.transactions.all()[:50]
+    vendors = CampusVendor.objects.filter(is_active=True)
+
+    return render(request, 'finder/coin_wallet.html', {
+        'wallet': wallet,
+        'transactions': transactions,
+        'vendors': vendors,
+        'min_redeem': MIN_REDEEM_BALANCE,
+        'coins_per_action': COINS_PER_RESOLUTION,
+    })
+
+
+@login_required
+def redeem_coins(request):
+    """
+    POST endpoint: student redeems coins at a specific campus vendor.
+    - Validates vendor exists and is active.
+    - Validates amount ≤ vendor's max_discount_coins and ≤ user balance.
+    - Validates balance ≥ 50.
+    - Deducts coins and logs transaction.
+    """
+    if request.method != 'POST':
+        return redirect('coin_wallet')
+
+    vendor_id = request.POST.get('vendor_id', '').strip()
+    try:
+        amount = int(request.POST.get('amount', '0'))
+    except (ValueError, TypeError):
+        messages.error(request, "Please enter a valid coin amount.")
+        return redirect('coin_wallet')
+
+    if amount <= 0:
+        messages.error(request, "Redemption amount must be greater than 0.")
+        return redirect('coin_wallet')
+
+    try:
+        vendor = CampusVendor.objects.get(id=vendor_id, is_active=True)
+    except CampusVendor.DoesNotExist:
+        messages.error(request, "Selected vendor not found or no longer active.")
+        return redirect('coin_wallet')
+
+    if amount > vendor.max_discount_coins:
+        messages.error(request, f"You can redeem a maximum of {vendor.max_discount_coins} coins per visit at {vendor.name}.")
+        return redirect('coin_wallet')
+
+    wallet = CoinWallet.get_or_create_wallet(request.user)
+    try:
+        wallet.deduct_coins(
+            amount,
+            description=f"🛍️ Discount at {vendor.name}",
+            vendor=vendor.name,
+        )
+        messages.success(
+            request,
+            f"✅ Redeemed {amount} coins (₹{amount} discount) at {vendor.logo_emoji} {vendor.name}! "
+            f"Remaining balance: {wallet.balance} coins."
+        )
+    except ValueError as e:
+        messages.error(request, str(e))
+
+    return redirect('coin_wallet')
+
+
+@staff_required
+def admin_grant_coins(request):
+    """
+    Admin tool: manually grant or deduct coins for a user (for testing or special events).
+    """
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        try:
+            amount = int(request.POST.get('amount', 0))
+        except (ValueError, TypeError):
+            amount = 0
+        reason = request.POST.get('reason', 'Admin grant').strip()
+
+        if not username or amount == 0:
+            messages.error(request, "Please provide a username and a non-zero amount.")
+            return redirect('admin_coin_manager')
+
+        try:
+            user = User.objects.get(username=username)
+            wallet = CoinWallet.get_or_create_wallet(user)
+            if amount > 0:
+                wallet.add_coins(amount, description=f"🎖️ Admin grant: {reason}")
+                messages.success(request, f"Granted {amount} coins to @{username}. New balance: {wallet.balance}.")
+            else:
+                # negative = deduct
+                deduct_amt = abs(amount)
+                if wallet.balance < deduct_amt:
+                    messages.error(request, f"@{username} only has {wallet.balance} coins – cannot deduct {deduct_amt}.")
+                else:
+                    wallet.balance -= deduct_amt
+                    wallet.save(update_fields=['balance', 'updated_at'])
+                    CoinTransaction.objects.create(
+                        wallet=wallet,
+                        transaction_type=CoinTransaction.REDEEM,
+                        amount=deduct_amt,
+                        description=f"🔧 Admin deduction: {reason}",
+                    )
+                    messages.success(request, f"Deducted {deduct_amt} coins from @{username}. New balance: {wallet.balance}.")
+        except User.DoesNotExist:
+            messages.error(request, f"User '@{username}' not found.")
+
+    all_wallets = CoinWallet.objects.select_related('user').order_by('-balance')
+    vendors = CampusVendor.objects.all()
+    return render(request, 'finder/admin_coin_manager.html', {
+        'all_wallets': all_wallets,
+        'vendors': vendors,
+    })
+
+
+@staff_required
+def admin_manage_vendor(request):
+    """
+    Admin: add or toggle active/inactive status of a campus vendor.
+    """
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        if action == 'add':
+            name = request.POST.get('name', '').strip()
+            location = request.POST.get('location', '').strip()
+            description = request.POST.get('description', '').strip()
+            logo_emoji = request.POST.get('logo_emoji', '🏪').strip() or '🏪'
+            try:
+                max_coins = int(request.POST.get('max_discount_coins', 50))
+            except (ValueError, TypeError):
+                max_coins = 50
+            if name and location:
+                CampusVendor.objects.create(
+                    name=name,
+                    location=location,
+                    description=description,
+                    logo_emoji=logo_emoji,
+                    max_discount_coins=max_coins,
+                )
+                messages.success(request, f"Vendor '{name}' added successfully.")
+            else:
+                messages.error(request, "Vendor name and location are required.")
+
+        elif action == 'toggle':
+            vid = request.POST.get('vendor_id', '')
+            try:
+                vendor = CampusVendor.objects.get(id=vid)
+                vendor.is_active = not vendor.is_active
+                vendor.save(update_fields=['is_active'])
+                status_str = 'activated' if vendor.is_active else 'deactivated'
+                messages.success(request, f"Vendor '{vendor.name}' {status_str}.")
+            except CampusVendor.DoesNotExist:
+                messages.error(request, "Vendor not found.")
+
+        elif action == 'delete':
+            vid = request.POST.get('vendor_id', '')
+            try:
+                vendor = CampusVendor.objects.get(id=vid)
+                name = vendor.name
+                vendor.delete()
+                messages.success(request, f"Vendor '{name}' permanently removed.")
+            except CampusVendor.DoesNotExist:
+                messages.error(request, "Vendor not found.")
+
+    return redirect('admin_coin_manager')

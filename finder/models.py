@@ -1,16 +1,146 @@
 """
-Data Access Layer (Service Layer) for MongoDB 'item_reports' collection.
+Data Access Layer for MongoDB 'item_reports' collection AND
+CampusCoin Rewards System (SQLite via Django ORM).
 
-Note on Architecture:
-Django's built-in ORM (django.db.models.Model) generates SQL queries designed for relational databases (e.g. SQLite, PostgreSQL).
-Because MongoDB Atlas is a NoSQL document database, we use PyMongo directly to perform CRUD (Create, Read, Update, Delete) operations.
+Architecture:
+  - MongoDB Atlas  → item reports (PyMongo / ReportService)
+  - SQLite (ORM)   → user wallets, coin transactions, vendor registry
 """
 
 from datetime import datetime
 import uuid
 from bson import ObjectId
 from bson.errors import InvalidId
+
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+
 from .db import get_reports_collection
+
+
+# ===========================================================================
+# CampusCoin Rewards System – Django ORM (SQLite)
+# ===========================================================================
+
+class CoinWallet(models.Model):
+    """
+    One wallet per registered user.
+    Rules:
+      - 5 coins earned when a 'found' report is marked Resolved (item returned).
+      - 5 coins earned by the original reporter of a 'lost' item on resolution.
+      - Minimum 50 coins required to redeem any discount.
+      - 1 coin = ₹1 discount value.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='coin_wallet')
+    balance = models.PositiveIntegerField(default=0)
+    total_earned = models.PositiveIntegerField(default=0)
+    total_redeemed = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Coin Wallet'
+        verbose_name_plural = 'Coin Wallets'
+
+    def __str__(self):
+        return f"{self.user.username}'s Wallet – {self.balance} coins"
+
+    def can_redeem(self, amount=None):
+        if self.balance < 50:
+            return False
+        if amount is not None and self.balance < amount:
+            return False
+        return True
+
+    def add_coins(self, amount, description='', report_id=''):
+        self.balance += amount
+        self.total_earned += amount
+        self.save(update_fields=['balance', 'total_earned', 'updated_at'])
+        return CoinTransaction.objects.create(
+            wallet=self,
+            transaction_type=CoinTransaction.EARN,
+            amount=amount,
+            description=description,
+            report_id=report_id or '',
+        )
+
+    def deduct_coins(self, amount, description='', vendor=''):
+        if not self.can_redeem(amount):
+            if self.balance < 50:
+                raise ValueError("You need at least 50 coins to redeem a discount.")
+            raise ValueError(f"Insufficient balance. You have {self.balance} coins but tried to redeem {amount}.")
+        self.balance -= amount
+        self.total_redeemed += amount
+        self.save(update_fields=['balance', 'total_redeemed', 'updated_at'])
+        return CoinTransaction.objects.create(
+            wallet=self,
+            transaction_type=CoinTransaction.REDEEM,
+            amount=amount,
+            description=description,
+            vendor=vendor or '',
+        )
+
+    @classmethod
+    def get_or_create_wallet(cls, user):
+        wallet, _ = cls.objects.get_or_create(user=user)
+        return wallet
+
+
+class CoinTransaction(models.Model):
+    EARN = 'earn'
+    REDEEM = 'redeem'
+    TRANSACTION_TYPE_CHOICES = [
+        (EARN, 'Earned'),
+        (REDEEM, 'Redeemed'),
+    ]
+    wallet = models.ForeignKey(CoinWallet, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE_CHOICES)
+    amount = models.PositiveIntegerField()
+    description = models.CharField(max_length=255, blank=True)
+    report_id = models.CharField(max_length=50, blank=True)
+    vendor = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = 'Coin Transaction'
+        verbose_name_plural = 'Coin Transactions'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        emoji = '🪙+' if self.transaction_type == self.EARN else '🛍️-'
+        return f"{emoji}{self.amount} | {self.wallet.user.username} | {self.description}"
+
+    @property
+    def is_earn(self):
+        return self.transaction_type == self.EARN
+
+    @property
+    def is_redeem(self):
+        return self.transaction_type == self.REDEEM
+
+
+class CampusVendor(models.Model):
+    """Campus shops / canteens that accept CampusCoin as discount."""
+    name = models.CharField(max_length=150)
+    location = models.CharField(max_length=200)
+    description = models.CharField(max_length=500, blank=True)
+    max_discount_coins = models.PositiveIntegerField(
+        default=50,
+        help_text="Maximum coins redeemable per visit at this vendor"
+    )
+    is_active = models.BooleanField(default=True)
+    logo_emoji = models.CharField(max_length=10, default='🏪')
+    contact_email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Campus Vendor'
+        verbose_name_plural = 'Campus Vendors'
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{'✅' if self.is_active else '❌'} {self.name} – {self.location}"
 
 # Predefined categories for Campus Lost & Found
 CATEGORIES = [

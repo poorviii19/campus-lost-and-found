@@ -1,0 +1,213 @@
+{% extends 'finder/base.html' %}
+
+{% block title %}My CampusCoin Wallet | CampusFind{% endblock %}
+
+{% block content %}
+<main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+
+    <!-- Page Header -->
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                🪙 My CampusCoin Wallet
+            </h1>
+            <p class="text-sm text-gray-500 mt-0.5">Earn coins by helping others. Spend them on campus.</p>
+        </div>
+        <a href="{% url 'my_reports' %}" class="text-sm text-brand-600 hover:underline font-semibold flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to My Reports
+        </a>
+    </div>
+
+    <!-- Balance Cards Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+
+        <!-- Current Balance -->
+        <div class="bg-gradient-to-br from-amber-400 to-yellow-500 rounded-3xl p-6 text-white shadow-lg shadow-yellow-200 col-span-1">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl">🪙</div>
+                <span class="text-sm font-semibold opacity-90">Current Balance</span>
+            </div>
+            <div class="text-5xl font-black tracking-tight">{{ wallet.balance }}</div>
+            <div class="text-sm opacity-80 mt-1">coins · ₹{{ wallet.balance }} value</div>
+            {% if wallet.can_redeem %}
+                <div class="mt-3 inline-flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Ready to redeem!
+                </div>
+            {% else %}
+                <div class="mt-3 inline-flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold opacity-80">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Need {{ min_redeem }} coins to unlock
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Lifetime Earned -->
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-2">
+            <div class="flex items-center gap-2 text-emerald-600 mb-2">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </div>
+                <span class="text-sm font-semibold text-gray-600">Total Earned</span>
+            </div>
+            <div class="text-3xl font-black text-gray-900">{{ wallet.total_earned }}</div>
+            <div class="text-xs text-gray-400">coins earned from helping</div>
+        </div>
+
+        <!-- Lifetime Redeemed -->
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-2">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span class="text-sm font-semibold text-gray-600">Total Redeemed</span>
+            </div>
+            <div class="text-3xl font-black text-gray-900">{{ wallet.total_redeemed }}</div>
+            <div class="text-xs text-gray-400">₹{{ wallet.total_redeemed }} discounts used</div>
+        </div>
+    </div>
+
+    <!-- How to Earn -->
+    <div class="bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-100 rounded-3xl p-6">
+        <h2 class="text-sm font-bold text-brand-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <i data-lucide="gift" class="w-4 h-4"></i> How to Earn CampusCoins
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl mt-0.5">🔍</span>
+                <div>
+                    <div class="text-sm font-bold text-gray-800">Report a Found Item</div>
+                    <div class="text-xs text-gray-500">Submit a "found item" report and get it marked as Resolved — earn <strong>+{{ coins_per_action }} coins</strong>.</div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="text-2xl mt-0.5">✅</span>
+                <div>
+                    <div class="text-sm font-bold text-gray-800">Get Your Lost Item Back</div>
+                    <div class="text-xs text-gray-500">When your lost item is found and reunited — earn <strong>+{{ coins_per_action }} coins</strong>.</div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-brand-100 text-xs text-brand-600 font-semibold flex items-center gap-1.5">
+            <i data-lucide="info" class="w-3.5 h-3.5"></i>
+            Minimum <strong>{{ min_redeem }} coins</strong> required to unlock redemptions. 1 coin = ₹1 discount.
+        </div>
+    </div>
+
+    <!-- Redeem at Vendors -->
+    {% if vendors %}
+    <div>
+        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i data-lucide="store" class="w-5 h-5 text-brand-600"></i> Redeem at Campus Shops
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for vendor in vendors %}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">{{ vendor.logo_emoji }}</span>
+                    <div>
+                        <div class="font-bold text-gray-900 text-sm">{{ vendor.name }}</div>
+                        <div class="text-xs text-gray-500 flex items-center gap-1">
+                            <i data-lucide="map-pin" class="w-3 h-3"></i>{{ vendor.location }}
+                        </div>
+                    </div>
+                </div>
+                {% if vendor.description %}
+                <p class="text-xs text-gray-500 leading-relaxed">{{ vendor.description }}</p>
+                {% endif %}
+                <div class="text-xs text-amber-600 font-semibold bg-amber-50 rounded-xl px-3 py-1.5 inline-flex items-center gap-1 self-start">
+                    🪙 Up to {{ vendor.max_discount_coins }} coins/visit
+                </div>
+
+                {% if wallet.can_redeem %}
+                <!-- Redeem Form -->
+                <form method="POST" action="{% url 'redeem_coins' %}" class="mt-auto space-y-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="vendor_id" value="{{ vendor.id }}">
+                    <div class="flex items-center gap-2">
+                        <input type="number"
+                               name="amount"
+                               min="1"
+                               max="{{ vendor.max_discount_coins }}"
+                               placeholder="Coins"
+                               required
+                               class="w-24 border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-300">
+                        <button type="submit"
+                                class="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-1.5 px-3 rounded-xl transition-colors">
+                            Redeem 🪙
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-gray-400">Your balance: {{ wallet.balance }} coins</div>
+                </form>
+                {% else %}
+                <div class="mt-auto text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2 flex items-center gap-1.5">
+                    <i data-lucide="lock" class="w-3.5 h-3.5 text-gray-300"></i>
+                    Need {{ min_redeem }} coins to unlock (you have {{ wallet.balance }})
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white border border-dashed border-gray-200 rounded-3xl p-10 text-center">
+        <div class="text-4xl mb-3">🏪</div>
+        <div class="text-sm font-semibold text-gray-700">No partner vendors yet</div>
+        <div class="text-xs text-gray-400 mt-1">Campus shops are being onboarded. Check back soon!</div>
+    </div>
+    {% endif %}
+
+    <!-- Transaction History -->
+    <div>
+        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i data-lucide="clock" class="w-5 h-5 text-brand-600"></i> Transaction History
+        </h2>
+        {% if transactions %}
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Description</th>
+                        <th class="text-right px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Coins</th>
+                        <th class="text-right px-5 py-3 text-xs font-bold uppercase tracking-wider text-gray-500 hidden sm:table-cell">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-5 py-3.5">
+                            {% if tx.is_earn %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Earned
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
+                                <i data-lucide="minus" class="w-3 h-3"></i> Redeemed
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-700 max-w-[220px] truncate">
+                            {{ tx.description }}
+                            {% if tx.vendor %}<span class="text-gray-400 text-xs"> · {{ tx.vendor }}</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-right font-bold {% if tx.is_earn %}text-emerald-600{% else %}text-rose-500{% endif %}">
+                            {% if tx.is_earn %}+{% else %}-{% endif %}{{ tx.amount }}
+                        </td>
+                        <td class="px-5 py-3.5 text-right text-xs text-gray-400 hidden sm:table-cell">
+                            {{ tx.created_at|date:"M d, Y" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white border border-dashed border-gray-200 rounded-3xl p-10 text-center">
+            <div class="text-4xl mb-3">📋</div>
+            <div class="text-sm font-semibold text-gray-700">No transactions yet</div>
+            <div class="text-xs text-gray-400 mt-1">Start helping by reporting found items to earn your first coins!</div>
+        </div>
+        {% endif %}
+    </div>
+
+</main>
+{% endblock %}

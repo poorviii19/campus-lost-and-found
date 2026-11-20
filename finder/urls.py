@@ -16,18 +16,24 @@ urlpatterns = [
     path('reports/<str:item_id>/chat/', views.report_chat, name='report_chat'),
     path('reports/<str:item_id>/chat/api/', views.report_chat_api, name='report_chat_api'),
 
-    # My Reports & Management (Phase 10)
+    # My Reports & Management
     path('my-reports/', views.my_reports, name='my_reports'),
     path('my-reports/edit/<str:item_id>/', views.edit_report, name='edit_report'),
     path('my-reports/delete/<str:item_id>/', views.delete_report, name='delete_report'),
     path('my-reports/resolve/<str:item_id>/', views.mark_resolved, name='mark_resolved'),
 
-    # Admin Management & Moderation (Phase 11)
+    # Admin Management & Moderation
     path('portal-admin/', views.admin_dashboard, name='admin_dashboard'),
     path('portal-admin/status/<str:item_id>/<str:action>/', views.admin_update_status, name='admin_update_status'),
     path('portal-admin/delete/<str:item_id>/', views.admin_delete_report, name='admin_delete_report'),
 
-    # Authentication (Phase 6)
+    # 🪙 CampusCoin Rewards System
+    path('wallet/', views.coin_wallet, name='coin_wallet'),
+    path('wallet/redeem/', views.redeem_coins, name='redeem_coins'),
+    path('portal-admin/coins/', views.admin_grant_coins, name='admin_coin_manager'),
+    path('portal-admin/coins/vendors/', views.admin_manage_vendor, name='admin_manage_vendor'),
+
+    # Authentication
     path('login/', views.user_login, name='login'),
     path('register/', views.user_register, name='register'),
     path('logout/', views.user_logout, name='logout'),
